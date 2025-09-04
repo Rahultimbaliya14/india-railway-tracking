@@ -405,31 +405,36 @@ function initTabs() {
     const trainNumberInput = document.getElementById('trainNumber');
     const searchButton = document.getElementById('searchButton');
 
+    // Function to handle tab switching
+    function switchTab(button) {
+        // Remove active class from all buttons and contents
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+        
+        // Add active class to clicked button and corresponding content
+        button.classList.add('active');
+        const tabId = button.getAttribute('data-tab');
+        document.getElementById(tabId).classList.add('active');
+        
+        // Show/hide search box based on active tab
+        if (tabId === 'route-tab' || tabId === 'live-tab') {
+            searchBox.style.display = 'flex';
+            trainNumberInput.style.display = 'block';
+            searchButton.style.display = 'block';
+        } else if (tabId === 'pnr-tab') {
+            searchBox.style.display = 'none';
+        }
+    }
+
+    // Add click event to all tab buttons
     tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            // Remove active class from all buttons and contents
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            tabContents.forEach(content => content.classList.remove('active'));
-            
-            // Add active class to clicked button and corresponding content
-            button.classList.add('active');
-            const tabId = button.getAttribute('data-tab');
-            document.getElementById(tabId).classList.add('active');
-            
-            // Show/hide search box based on active tab
-            if (tabId === 'route-tab' || tabId === 'live-tab') {
-                searchBox.style.display = 'flex';
-                trainNumberInput.style.display = 'block';
-                searchButton.style.display = 'block';
-            } else if (tabId === 'pnr-tab') {
-                searchBox.style.display = 'flex';
-                trainNumberInput.style.display = 'none';
-                searchButton.style.display = 'none';
-            } else {
-                searchBox.style.display = 'none';
-            }
-        });
+        button.addEventListener('click', () => switchTab(button));
     });
+    
+    // Initialize first tab as active
+    if (tabButtons.length > 0) {
+        switchTab(tabButtons[0]);
+    }
 }
 
 function initMap() {

@@ -96,8 +96,17 @@ body {
     margin-right: 8px;
 }
 
-#pnr-tab{
-    margin-top: -30px;
+/* Show search box by default */
+.search-box {
+    display: flex;
+    margin: 15px auto;
+    width: 100%;
+    max-width: 600px;
+}
+
+/* Adjust PNR tab content position */
+#pnr-tab {
+    margin-top: 15px;
 }
 
 @keyframes spin {
