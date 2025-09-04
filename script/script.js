@@ -243,7 +243,7 @@ async function updateLiveTrainData(trainNo, isManual = false) {
             s.station && currentStation && 
             s.station.toLowerCase().includes(currentStation.toLowerCase().split(' (')[0])
         );
-        const lastArrivedStation = [...stations].reverse().find(s => s.arrived === "Yes");
+        const lastArrivedStation = [...stations].reverse().find(s => s.arrived === "Yes" || !s.platformNumber.includes('*'));
         let currentActual  = stations.findIndex(s => 
             s.station && currentStation && 
             s.station.toLowerCase().includes(lastArrivedStation.station.toLowerCase().split('-')[0].trim())
