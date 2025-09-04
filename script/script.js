@@ -540,7 +540,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeDatePicker();
     
     // Add refresh button event listener
-    // Add refresh button event listener
     const refreshButton = document.getElementById('refreshButton');
     if (refreshButton) {
         refreshButton.addEventListener('click', () => {
@@ -569,21 +568,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchButton = document.getElementById('searchButton');
     const trainNumberInput = document.getElementById('trainNumber');
     
+    function setLoading(isLoading) {
+        const searchButton = document.getElementById('searchButton');
+        if (searchButton) {
+            searchButton.disabled = isLoading;
+            searchButton.setAttribute('aria-busy', isLoading);
+            if (isLoading) {
+                searchButton.classList.add('loading');
+            } else {
+                searchButton.classList.remove('loading');
+            }
+        }
+    }
+
     const handleSearch = async () => {
         const trainNo = trainNumberInput.value.trim();
-        const searchBox = document.querySelector('.search-box');
-        const searchBtn = document.getElementById('searchButton');
-        
         if (!trainNo) {
             alert('Please enter a train number');
             return;
         }
-        
-        // Set loading state
-        searchBox.classList.add('loading');
-        searchBtn.disabled = true;
-        searchBtn.textContent = ''; // Remove text during loading
-        
+
+        // Prevent multiple clicks
+        if (searchButton.classList.contains('loading')) {
+            return;
+        }
+
+        // Show loading state
+        setLoading(true);
+
         const activeTab = document.querySelector('.tab-button.active').getAttribute('data-tab');
         
         try {
@@ -611,9 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } finally {
             // Reset loading state
-            searchBox.classList.remove('loading');
-            searchBtn.disabled = false;
-            searchBtn.textContent = 'Search';
+            setLoading(false);
         }
     };
     
@@ -626,3 +636,191 @@ document.addEventListener('DOMContentLoaded', () => {
     
 
 });
+// Train autocomplete functionality
+function initializeTrainAutocomplete() {
+    console.log('Initializing train autocomplete...');
+    const trainInput = document.getElementById('trainNumber');
+    const searchButton = document.getElementById('searchButton');
+    let suggestionsContainer;
+
+    // Create suggestions container if it doesn't exist
+    if (!document.getElementById('suggestionsContainer')) {
+        suggestionsContainer = document.createElement('div');
+        suggestionsContainer.id = 'suggestionsContainer';
+        suggestionsContainer.className = 'suggestions-container';
+        
+        // Insert the suggestions container right after the input field
+        const searchBox = trainInput.closest('.search-box');
+        if (searchBox) {
+            searchBox.style.position = 'relative'; // Ensure the search box is a positioning context
+            searchBox.appendChild(suggestionsContainer);
+        } else {
+            trainInput.parentNode.insertBefore(suggestionsContainer, trainInput.nextSibling);
+        }
+    } else {
+        suggestionsContainer = document.getElementById('suggestionsContainer');
+    }
+
+    // Function to parse train number and name from the string format
+    function parseTrainInfo(trainStr) {
+        // Format: "12345- TRAIN NAME"
+        const match = trainStr.match(/^(\d{5})-\s*(.+)$/);
+        if (match) {
+            return {
+                number: match[1].trim(),
+                name: match[2].trim()
+            };
+        }
+        return null;
+    }
+
+    // Function to filter trains based on input
+    function filterTrains(input) {
+        const inputValue = input.trim().toLowerCase();
+        console.log('Filtering trains for input:', inputValue);
+        if (!inputValue) return [];
+
+        // Get all train data from trainData.js (arrTrainList array)
+        console.log(window);
+        const trainData = window.arrTrainList || [];
+        console.log('Total trains in data:', trainData.length);
+        const results = [];
+        
+        for (const trainStr of trainData) {
+            const trainInfo = parseTrainInfo(trainStr);
+            if (trainInfo) {
+                const trainNumber = trainInfo.number.toLowerCase();
+                const trainName = trainInfo.name.toLowerCase();
+                
+                if (trainNumber.includes(inputValue) || trainName.includes(inputValue)) {
+                    results.push({
+                        number: trainInfo.number,
+                        name: trainInfo.name,
+                        display: trainInfo.number + ' - ' + trainInfo.name
+                    });
+                    
+                    if (results.length >= 10) break; // Limit to 10 results
+                }
+            }
+        }
+        
+        return results;
+    }
+
+    // Function to display suggestions
+    function showSuggestions() {
+        const input = trainInput.value.trim();
+        console.log('Showing suggestions for input:', input);
+        const filteredTrains = filterTrains(input);
+        console.log('Filtered trains:', filteredTrains.length);
+        
+        suggestionsContainer.innerHTML = '';
+        
+        if (filteredTrains.length === 0 || !input) {
+            suggestionsContainer.style.display = 'none';
+            return;
+        }
+        
+        filteredTrains.forEach((train, index) => {
+            const suggestion = document.createElement('div');
+            suggestion.className = 'suggestion-item';
+            suggestion.setAttribute('data-index', index);
+            suggestion.innerHTML = `
+                <span class="train-number">${train.number}</span>
+                <span class="train-name">${train.name}</span>
+            `;
+            suggestion.addEventListener('click', () => {
+                trainInput.value = train.number;
+                suggestionsContainer.style.display = 'none';
+                // Trigger search if search button exists
+                if (searchButton) searchButton.click();
+            });
+            
+            // Add hover effect
+            suggestion.addEventListener('mouseenter', () => {
+                // Remove selected class from all suggestions
+                const items = suggestionsContainer.querySelectorAll('.suggestion-item');
+                items.forEach(item => item.classList.remove('selected'));
+                // Add to current item
+                suggestion.classList.add('selected');
+                selectedIndex = index;
+            });
+            
+            suggestionsContainer.appendChild(suggestion);
+        });
+        
+        // Show the suggestions container
+        suggestionsContainer.style.display = 'block';
+        
+        // Reset selected index
+        selectedIndex = -1;
+    }
+
+        // Add keyboard navigation
+    let selectedIndex = -1;
+    
+    function updateSelectedSuggestion(suggestions, index) {
+        suggestions.forEach((suggestion, i) => {
+            if (i === index) {
+                suggestion.classList.add('selected');
+                const trainNumber = suggestion.querySelector('.train-number').textContent;
+                trainInput.value = trainNumber;
+                suggestion.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            } else {
+                suggestion.classList.remove('selected');
+            }
+        });
+        
+        // If no suggestion is selected, set input to the current value
+        if (index === -1 && trainInput.value.trim() === '') {
+            trainInput.value = '';
+        }
+        
+        selectedIndex = index;
+    }
+    
+    // Event listeners
+    trainInput.addEventListener('input', showSuggestions);
+    
+    // Handle keyboard navigation
+    trainInput.addEventListener('keydown', (e) => {
+        const suggestions = suggestionsContainer.querySelectorAll('.suggestion-item');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIndex = Math.min(selectedIndex + 1, suggestions.length - 1);
+            updateSelectedSuggestion(suggestions, selectedIndex);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIndex = Math.max(selectedIndex - 1, -1);
+            updateSelectedSuggestion(suggestions, selectedIndex);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedIndex > -1 && suggestions[selectedIndex]) {
+                suggestions[selectedIndex].click();
+            } else if (searchButton) {
+                searchButton.click();
+            }
+        } else if (e.key === 'Escape') {
+            suggestionsContainer.style.display = 'none';
+        } else if (e.key === 'Tab') {
+            // Hide suggestions when tabbing out
+            setTimeout(() => {
+                if (!suggestionsContainer.contains(document.activeElement) && document.activeElement !== trainInput) {
+                    suggestionsContainer.style.display = 'none';
+                }
+            }, 10);
+        }
+    });
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!trainInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+            suggestionsContainer.style.display = 'none';
+        }
+    });
+}
+
+
+// Call the initialization function when the DOM is loaded
+document.addEventListener('DOMContentLoaded', initializeTrainAutocomplete);

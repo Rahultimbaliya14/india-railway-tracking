@@ -22,8 +22,10 @@
         <!-- Search Box -->
         <div class="search-box">
             <input type="text" id="trainNumber" placeholder="Enter Train Number" required>
-
-            <button id="searchButton">Search</button>
+            <button id="searchButton">
+                <span class="spinner"></span>
+                <span class="button-text">Search</span>
+            </button>
         </div>
 
         <!-- Route Information Tab -->
@@ -137,7 +139,14 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Load train data first -->
+    <script src="https://enquiry.indianrail.gov.in/mntes/javascripts/train_data.js?v=2"></script>
+    <!-- Then load main script -->
     <script src="script/script.js"></script>
+    <script>
+        // Add debug logging
+        console.log('Train data loaded:', typeof arrTrainList !== 'undefined' ? arrTrainList.length + ' trains' : 'Not found');
+    </script>
 </body>
 
 </html>
