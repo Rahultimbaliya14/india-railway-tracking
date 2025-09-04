@@ -15,7 +15,6 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* Search Box Styles */
 .search-box {
     position: relative;
     max-width: 600px;
@@ -24,7 +23,8 @@ body {
     gap: 10px;
 }
 
-.search-box input[type="text"] {
+.search-box input[type="text"],
+.search-box input[type="number"] {
     flex: 1;
     padding: 12px 20px;
     border: 2px solid #e1e8ed;
@@ -32,9 +32,31 @@ body {
     font-size: 16px;
     transition: all 0.3s ease;
     background-color: white;
+    -webkit-appearance: none; 
+    -moz-appearance: textfield; 
+    appearance: textfield; 
 }
 
-.search-box input[type="text"]:focus {
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.input-error {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    border-color: #ff4444 !important;
+    background-color: #fff8f8 !important;
+}
+
+.search-box input[type="number"]::-webkit-outer-spin-button,
+.search-box input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.search-box input[type="text"]:focus,
+.search-box input[type="number"]:focus {
     border-color: #3498db;
     outline: none;
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
@@ -63,7 +85,6 @@ body {
     box-shadow: none;
 }
 
-/* Loading state */
 .search-box button .spinner {
     display: none;
     width: 16px;
@@ -97,7 +118,6 @@ body {
     opacity: 0.7;
 }
 
-/* Suggestions Container */
 .suggestions-container {
     position: absolute;
     top: 100%;
@@ -164,7 +184,6 @@ h1 {
     font-weight: 600;
 }
 
-/* Date Selector */
 #live-tab .date-selector {
     display: flex;
     align-items: center;
@@ -235,7 +254,6 @@ h1 {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Modern focus effect */
 .date-selector input[type="date"]:focus {
     border-color: #5e72e4;
     box-shadow: 0 0 0 3px rgba(94, 114, 228, 0.2);
@@ -243,19 +261,15 @@ h1 {
     background-color: #ffffff;
 }
 
-/* Hover effect */
 .date-selector input[type="date"]:hover {
     border-color: #a3bffa;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
-
-/* Active state */
 .date-selector input[type="date"]:active {
     transform: translateY(0);
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Disabled state */
 .date-selector input[type="date"]:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -271,7 +285,6 @@ h1 {
     background-color: #fff;
 }
 
-/* Custom styling for the calendar dropdown */
 input[type="date"]::-webkit-calendar-picker-indicator {
     opacity: 0;
     position: absolute;
@@ -284,19 +297,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     cursor: pointer;
 }
 
-/* Hover state */
 .date-selector input[type="date"]:hover {
     border-color: #b8c2cc;
     background-color: #fff;
 }
-
-/* Disabled dates styling */
 .date-selector input[type="date"]:disabled {
     opacity: 0.7;
     cursor: not-allowed;
 }
 
-/* Responsive adjustments */
 @media (max-width: 580px) {
     #live-tab .date-selector {
         flex-direction: column;
@@ -325,7 +334,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     }
 }
 
-/* Animation for date picker container */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-5px); }
     to { opacity: 1; transform: translateY(0); }
@@ -335,8 +343,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     animation: fadeIn 0.4s ease-out forwards;
 }
 
-/* Search Box */
-/* Search box container */
 .search-box {
     position: relative;
     max-width: 600px;
@@ -391,7 +397,6 @@ button:active {
     transform: translateY(0);
 }
 
-/* Suggestions Container */
 .suggestions-container {
     position: absolute;
     top: 100%;
@@ -439,7 +444,6 @@ button:active {
     text-overflow: ellipsis;
 }
 
-/* Train Header */
 .train-header {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     padding: 24px;
@@ -531,7 +535,6 @@ button:active {
     color: #6c757d;
 }
 
-/* Route Progress */
 .route-progress {
     margin: 30px 0;
     padding: 0 20px;
@@ -558,7 +561,6 @@ button:active {
     z-index: 1;
 }
 
-/* Station Information in Live Tracking */
 .station-info-container {
     margin-top: 0;
     background: #fff;
@@ -602,7 +604,6 @@ button:active {
     overflow: hidden;
 }
 
-/* Add a subtle shine effect */
 .progress::after {
     content: '';
     position: absolute;
@@ -624,7 +625,6 @@ button:active {
     100% { transform: translateX(100%); }
 }
 
-/* Fix for the stray span selector */
 span {
     display: inline-block;
 }
@@ -1043,7 +1043,6 @@ span {
     font-weight: 500;
 }
 
-/* Error Message */
 .error {
     color: #dc3545;
     background: #f8d7da;
@@ -1053,7 +1052,6 @@ span {
     margin: 0;
 }
 
-/* Tabs */
 .tabs {
     margin-bottom: 20px;
     display: flex;
@@ -1094,7 +1092,6 @@ animation: fadeIn 0.5s ease;
     display: block;
 }
 
-/* Live Tracking */
 .live-tracking {
     margin-top: 20px;
     display: flex;
@@ -1105,7 +1102,6 @@ animation: fadeIn 0.5s ease;
     margin-right: auto;
 }
 
-/* Train Info Header */
 .train-info-header {
     background: #ffffff;
     border-radius: 10px;
@@ -1115,7 +1111,6 @@ animation: fadeIn 0.5s ease;
     width: 100%;
 }
 
-/* Map Container */
 .map-container {
     background: #f8f9fa;
     border-radius: 10px;
@@ -1127,7 +1122,6 @@ animation: fadeIn 0.5s ease;
     width: 100%;
 }
 
-/* Train Info Header */
 .train-info-header {
     background: #ffffff;
     border-radius: 10px;
@@ -1178,7 +1172,6 @@ animation: fadeIn 0.5s ease;
     margin-bottom: 3px;
 }
 
-/* Current Status Card */
 .current-status-card {
     background: #ffffff;
     border-radius: 10px;
@@ -1216,7 +1209,6 @@ animation: fadeIn 0.5s ease;
     color: #2c3e50;
 }
 
-/* Train Status Card */
 .train-status-card {
     background: #f8f9fa;
     border-radius: 10px;
@@ -1238,7 +1230,6 @@ animation: fadeIn 0.5s ease;
     font-size: 18px;
 }
 
-/* Refresh Button Styles */
 .train-header-row {
     display: flex;
     align-items: center;

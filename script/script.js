@@ -46,18 +46,13 @@ async function trackTrain() {
     }
 
     try {
-        // Show loading state
         trainInfoDiv.innerHTML = '<p>Loading train information...</p>';
         stationListDiv.innerHTML = '';
         resultDiv.style.display = 'block';
-
-        // Fetch train data from API
         const trainData = await fetchTrainData(trainNumber);
         
-        // Calculate current station index
         const currentStationIndex = getCurrentStationIndex(trainData.routeData);
         
-        // Display train information
         trainInfoDiv.innerHTML = `
             <div class="train-header">
                 <h2>${trainData.trainName} (${trainData.trainNumber})</h2>
@@ -100,7 +95,6 @@ async function trackTrain() {
             const isFirst = station.arrival === 'First';
             const isLast = station.departure === 'Last';
             
-            // Format scheduled and estimated times if available
             const stdTime = station.std ? formatTime(station.std) : '-';
             const etdTime = station.etd ? formatTime(station.etd) : '-';
             
@@ -144,7 +138,6 @@ async function trackTrain() {
     }
 }
 
-// Format time string to 12-hour format with AM/PM
 function formatTime(timeStr) {
     if (!timeStr) return '-';
     const [time, date] = timeStr.split(' ');
@@ -155,7 +148,6 @@ function formatTime(timeStr) {
     return `${hour12}:${minutes} ${ampm} (${date})`;
 }
 
-// Show or hide loading state
 function showLoading(show) {
     const loading = document.getElementById('loading');
     const content = document.getElementById('content');
@@ -166,16 +158,12 @@ function showLoading(show) {
     }
 }
 
-// Get delay status with appropriate color
 function getDelayStatus(delay) {
     if (!delay || delay === 'On Time') return { text: 'On Time', class: 'on-time' };
     return { text: delay, class: 'delayed' };
 }
-
-// Track if this is a manual refresh
 let isManualRefresh = false;
 
-// Format date to DD-MMM-YY format
 function formatDateForAPI(date) {
     const d = new Date(date);
     const day = String(d.getDate()).padStart(2, '0');
@@ -185,59 +173,48 @@ function formatDateForAPI(date) {
     return `${day}-${month}-${year}`;
 }
 
-// Initialize date picker
 function initializeDatePicker() {
     const dateInput = document.getElementById('journeyDate');
     if (dateInput) {
-        // Set max date to today
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
         dateInput.max = todayStr;
         
-        // Set a default date (30 days ago from today)
         const defaultDate = new Date();
         defaultDate.setDate(today.getDate() - 30);
         const defaultDateStr = defaultDate.toISOString().split('T')[0];
         
-        // Set min date to 1 year ago from today
         const minDate = new Date();
         minDate.setFullYear(today.getFullYear() - 1);
         dateInput.min = minDate.toISOString().split('T')[0];
         
-        // If no date is set, default to today
         if (!dateInput.value) {
             dateInput.value = todayStr;
         }
         
-        // Make sure the date picker is visible
         dateInput.style.visibility = 'visible';
         dateInput.style.opacity = '1';
     }
 }
 
-// Update live train information
 async function updateLiveTrainData(trainNo, isManual = false) {
     const liveTrackingContent = document.getElementById('liveTrackingContent');
     const refreshButton = document.getElementById('refreshButton');
     const journeyDate = document.getElementById('journeyDate').value || new Date().toISOString().split('T')[0];
     
-    // If this is a manual refresh, show loading on refresh button
     if (isManual && refreshButton) {
         refreshButton.classList.add('refreshing');
         isManualRefresh = true;
     }
     
     try {
-        // Only show full loading for initial load
         if (!isManual) {
             showLoading(true);
         }
         
-        // Hide content initially for initial load
         if (liveTrackingContent && !isManual) {
             liveTrackingContent.style.display = 'none';
         }
-        // Format selected date as DD-MMM-YY (e.g., 03-Sep-25)
         const formattedDate = formatDateForAPI(journeyDate);
         
         const response = await fetch('https://node-rahul-timbaliya.vercel.app/api/train/getTrainCurrentLocation', {
@@ -255,12 +232,10 @@ async function updateLiveTrainData(trainNo, isManual = false) {
         if (!data.trainStatus) {
             throw new Error('No live data available for this train');
         }
-        // Show content only after data is loaded
         if (liveTrackingContent) {
             liveTrackingContent.style.display = 'block';
         }
         
-        // Update train info header
         document.getElementById('trainNumberfirst').textContent = `${data.trainNumber} - ${data.trainName}`;
         document.getElementById('fromStation').textContent = data.fromStation;
         document.getElementById('toStation').textContent = data.toStation;
@@ -269,11 +244,9 @@ async function updateLiveTrainData(trainNo, isManual = false) {
         document.getElementById('duration').textContent = data.duration;
         document.getElementById('distance').textContent = `${data.travelingKMS} km`;
         
-        // Update current status
         const currentStation = data.trainStatus.currentTrainStation;
         document.getElementById('currentStation').textContent = currentStation || '-';
         
-        // Find next station
         const stations = data.trainStatus.station || [];
         let currentStationIndex = stations.findIndex(s => 
             s.station && currentStation && 
@@ -297,16 +270,13 @@ async function updateLiveTrainData(trainNo, isManual = false) {
             : 'Destination';
         document.getElementById('currentStation').textContent = preStation || '-';
 
-        // Update delay status
         const delayStatus = getDelayStatus(data.trainStatus.currentTrainStationDelay || 'On Time');
         const delayElement = document.getElementById('delay');
         delayElement.textContent = delayStatus.text;
         delayElement.className = `info-value ${delayStatus.class}`;
         
-        // Update last updated time
         document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
 
-        // Update station list
         const stationListContainer = document.getElementById('stationListContainer');
         if (stationListContainer) {
             const stationItems = stations.map((station, index) => {
@@ -357,7 +327,6 @@ async function updateLiveTrainData(trainNo, isManual = false) {
             stationListContainer.innerHTML = stationItems;
         }
 
-        // Update progress
         const progress = stations.length > 1 
             ? Math.round((currentActual / (stations.length - 1)) * 100) 
             : 0;
@@ -369,7 +338,6 @@ async function updateLiveTrainData(trainNo, isManual = false) {
             progressText.textContent = `${progress}% Complete`;
         }
         
-        // Update train status card
         const trainStatusCard = document.createElement('div');
         trainStatusCard.className = 'train-status-card';
         trainStatusCard.innerHTML = `
@@ -396,7 +364,6 @@ async function updateLiveTrainData(trainNo, isManual = false) {
             </div>
         `;
         
-        // Clear previous status and add new one
         const statusContainer = document.getElementById('liveTrainInfo');
         if (statusContainer) {
             const existingCard = statusContainer.querySelector('.train-status-card');
@@ -414,52 +381,41 @@ async function updateLiveTrainData(trainNo, isManual = false) {
             statusElement.innerHTML = `<div class="error">Error: ${error.message || 'Failed to fetch live data'}</div>`;
         }
     } finally {
-        // Reset loading states
         const refreshButton = document.getElementById('refreshButton');
         if (refreshButton) {
             refreshButton.classList.remove('refreshing');
         }
         
-        // Only hide loading if it's not a manual refresh
         if (!isManualRefresh) {
             showLoading(false);
         }
         
-        // Reset manual refresh flag
         isManualRefresh = false;
     }
 }
 
-// Initialize tabs
 function initTabs() {
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
     const dateSelector = document.querySelector('.date-selector');
 
-    // Initially hide the date selector
     if (dateSelector) {
         dateSelector.style.display = 'none';
     }
 
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
-            // Hide all tab contents
             tabContents.forEach(content => {
                 content.classList.remove('active');
             });
-
-            // Deactivate all buttons
             tabButtons.forEach(btn => {
                 btn.classList.remove('active');
             });
 
-            // Show the selected tab content
             const tabId = button.getAttribute('data-tab');
             const tabContent = document.getElementById(tabId);
             tabContent.classList.add('active');
             button.classList.add('active');
-
-            // Show/hide date selector based on active tab
             if (dateSelector) {
                 if (tabId === 'live-tab') {
                     dateSelector.style.display = 'flex';
@@ -471,28 +427,14 @@ function initTabs() {
     });
 }
 
-// Initialize map (placeholder for actual map integration)
 function initMap() {
-    // This is a placeholder for map initialization
-    // In a real app, you would initialize your map library here (e.g., Google Maps, Leaflet, etc.)
-    console.log('Map would be initialized here');
     window.mapInitialized = true;
-    
-    // Example of how you might update the map with a train's location
-    // updateTrainLocation(lat, lng);
 }
 
-// Update train location on the map (placeholder function)
 function updateTrainLocation(lat, lng) {
-    // This would update the map with the train's current location
-    console.log(`Updating train location to: ${lat}, ${lng}`);
     
-    // In a real app, you would update the map marker here
-    // map.setView([lat, lng]);
-    // marker.setLatLng([lat, lng]);
 }
 
-// Simulate live train data (for demo purposes)
 function simulateLiveTrainData() {
     if (window.liveDataInterval) {
         clearInterval(window.liveDataInterval);
@@ -501,11 +443,9 @@ function simulateLiveTrainData() {
     let currentStationIndex = 0;
     
     window.liveDataInterval = setInterval(() => {
-        // Update current station
         document.getElementById('currentStation').textContent = 
             `${stations[currentStationIndex].name} (${stations[currentStationIndex].code})`;
             
-        // Update next station (if not at the last station)
         if (currentStationIndex < stations.length - 1) {
             document.getElementById('nextStation').textContent = 
                 `${stations[currentStationIndex + 1].name} (${stations[currentStationIndex + 1].code})`;
@@ -513,33 +453,21 @@ function simulateLiveTrainData() {
             document.getElementById('nextStation').textContent = 'Terminus';
         }
         
-        // Update last update time
         const now = new Date();
         document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
         
-        // Simulate speed (random between 60-120 km/h)
-        const speed = Math.floor(Math.random() * 60) + 60;
-        document.getElementById('speedValue').textContent = speed;
-        
-        // Change speed color based on value
         const speedElement = document.getElementById('speedValue');
         speedElement.style.color = speed > 100 ? '#e74c3c' : '#2ecc71';
         
-        // Move to next station after some time
         currentStationIndex = (currentStationIndex + 1) % stations.length;
         
-    }, 5000); // Update every 5 seconds
+    }, 5000); 
 }
 
-// Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize tabs
     initTabs();
-    
-    // Initialize date picker
     initializeDatePicker();
     
-    // Add refresh button event listener
     const refreshButton = document.getElementById('refreshButton');
     if (refreshButton) {
         refreshButton.addEventListener('click', () => {
@@ -550,11 +478,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Add date change listener to refresh data when date changes
     const dateInput = document.getElementById('journeyDate');
     if (dateInput) {
         dateInput.addEventListener('change', () => {
-            // Only refresh if we're on the live-tab
             if (document.getElementById('live-tab').classList.contains('active')) {
                 const trainNo = document.getElementById('trainNumber').value.trim();
                 if (trainNo) {
@@ -564,7 +490,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Search functionality
     const searchButton = document.getElementById('searchButton');
     const trainNumberInput = document.getElementById('trainNumber');
     
@@ -584,16 +509,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const handleSearch = async () => {
         const trainNo = trainNumberInput.value.trim();
         if (!trainNo) {
-            alert('Please enter a train number');
+            // Add shake animation class
+            trainNumberInput.classList.add('input-error');
+            // Remove the class after animation completes
+            setTimeout(() => {
+                trainNumberInput.classList.remove('input-error');
+            }, 500);
+            // Focus the input field
+            trainNumberInput.focus();
             return;
         }
 
-        // Prevent multiple clicks
         if (searchButton.classList.contains('loading')) {
             return;
         }
-
-        // Show loading state
         setLoading(true);
 
         const activeTab = document.querySelector('.tab-button.active').getAttribute('data-tab');
@@ -602,17 +531,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (activeTab === 'route-tab') {
                 await trackTrain();
             } else if (activeTab === 'live-tab') {
-                // Clear any existing interval
                 if (window.liveDataInterval) {
                     clearInterval(window.liveDataInterval);
                 }
-                // Initial data load
                 await updateLiveTrainData(trainNo);
                 window.liveDataInterval = setInterval(() => document.getElementById('refreshButton').click(), 80000);
             }
         } catch (error) {
             console.error('Search error:', error);
-            // Show error to user
             const resultDiv = document.querySelector(activeTab === 'route-tab' ? '#result' : '#liveTrackingContent');
             if (resultDiv) {
                 resultDiv.innerHTML = `
@@ -622,7 +548,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }
         } finally {
-            // Reset loading state
             setLoading(false);
         }
     };
@@ -636,23 +561,20 @@ document.addEventListener('DOMContentLoaded', () => {
     
 
 });
-// Train autocomplete functionality
 function initializeTrainAutocomplete() {
     console.log('Initializing train autocomplete...');
     const trainInput = document.getElementById('trainNumber');
     const searchButton = document.getElementById('searchButton');
     let suggestionsContainer;
 
-    // Create suggestions container if it doesn't exist
     if (!document.getElementById('suggestionsContainer')) {
         suggestionsContainer = document.createElement('div');
         suggestionsContainer.id = 'suggestionsContainer';
         suggestionsContainer.className = 'suggestions-container';
         
-        // Insert the suggestions container right after the input field
         const searchBox = trainInput.closest('.search-box');
         if (searchBox) {
-            searchBox.style.position = 'relative'; // Ensure the search box is a positioning context
+            searchBox.style.position = 'relative';
             searchBox.appendChild(suggestionsContainer);
         } else {
             trainInput.parentNode.insertBefore(suggestionsContainer, trainInput.nextSibling);
@@ -661,9 +583,7 @@ function initializeTrainAutocomplete() {
         suggestionsContainer = document.getElementById('suggestionsContainer');
     }
 
-    // Function to parse train number and name from the string format
     function parseTrainInfo(trainStr) {
-        // Format: "12345- TRAIN NAME"
         const match = trainStr.match(/^(\d{5})-\s*(.+)$/);
         if (match) {
             return {
@@ -674,13 +594,10 @@ function initializeTrainAutocomplete() {
         return null;
     }
 
-    // Function to filter trains based on input
     function filterTrains(input) {
         const inputValue = input.trim().toLowerCase();
         console.log('Filtering trains for input:', inputValue);
         if (!inputValue) return [];
-
-        // Get all train data from trainData.js (arrTrainList array)
         console.log(window);
         const trainData = window.arrTrainList || [];
         console.log('Total trains in data:', trainData.length);
@@ -699,7 +616,7 @@ function initializeTrainAutocomplete() {
                         display: trainInfo.number + ' - ' + trainInfo.name
                     });
                     
-                    if (results.length >= 10) break; // Limit to 10 results
+                    if (results.length >= 10) break; 
                 }
             }
         }
@@ -707,7 +624,6 @@ function initializeTrainAutocomplete() {
         return results;
     }
 
-    // Function to display suggestions
     function showSuggestions() {
         const input = trainInput.value.trim();
         console.log('Showing suggestions for input:', input);
@@ -732,33 +648,22 @@ function initializeTrainAutocomplete() {
             suggestion.addEventListener('click', () => {
                 trainInput.value = train.number;
                 suggestionsContainer.style.display = 'none';
-                // Trigger search if search button exists
                 if (searchButton) searchButton.click();
             });
             
-            // Add hover effect
             suggestion.addEventListener('mouseenter', () => {
-                // Remove selected class from all suggestions
                 const items = suggestionsContainer.querySelectorAll('.suggestion-item');
                 items.forEach(item => item.classList.remove('selected'));
-                // Add to current item
                 suggestion.classList.add('selected');
                 selectedIndex = index;
             });
-            
             suggestionsContainer.appendChild(suggestion);
         });
-        
-        // Show the suggestions container
         suggestionsContainer.style.display = 'block';
-        
-        // Reset selected index
         selectedIndex = -1;
     }
 
-        // Add keyboard navigation
     let selectedIndex = -1;
-    
     function updateSelectedSuggestion(suggestions, index) {
         suggestions.forEach((suggestion, i) => {
             if (i === index) {
@@ -771,7 +676,6 @@ function initializeTrainAutocomplete() {
             }
         });
         
-        // If no suggestion is selected, set input to the current value
         if (index === -1 && trainInput.value.trim() === '') {
             trainInput.value = '';
         }
@@ -779,10 +683,8 @@ function initializeTrainAutocomplete() {
         selectedIndex = index;
     }
     
-    // Event listeners
     trainInput.addEventListener('input', showSuggestions);
     
-    // Handle keyboard navigation
     trainInput.addEventListener('keydown', (e) => {
         const suggestions = suggestionsContainer.querySelectorAll('.suggestion-item');
         
@@ -804,7 +706,6 @@ function initializeTrainAutocomplete() {
         } else if (e.key === 'Escape') {
             suggestionsContainer.style.display = 'none';
         } else if (e.key === 'Tab') {
-            // Hide suggestions when tabbing out
             setTimeout(() => {
                 if (!suggestionsContainer.contains(document.activeElement) && document.activeElement !== trainInput) {
                     suggestionsContainer.style.display = 'none';
@@ -813,7 +714,6 @@ function initializeTrainAutocomplete() {
         }
     });
     
-    // Hide suggestions when clicking outside
     document.addEventListener('click', (e) => {
         if (!trainInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
             suggestionsContainer.style.display = 'none';
@@ -821,6 +721,4 @@ function initializeTrainAutocomplete() {
     });
 }
 
-
-// Call the initialization function when the DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeTrainAutocomplete);
