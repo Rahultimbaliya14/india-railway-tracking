@@ -230,7 +230,11 @@ async function updateLiveTrainData(trainNo, isManual = false) {
         const data = await response.json();
         
         if (!data.trainStatus) {
+            let statusElement = document.getElementById("trainInfoLive")
+            console.log(statusElement);
+            statusElement.innerHTML = `<div class="error">Error: No live data available for this train</div>`;
             throw new Error('No live data available for this train');
+            
         }
         if (liveTrackingContent) {
             liveTrackingContent.style.display = 'block';
@@ -376,7 +380,7 @@ async function updateLiveTrainData(trainNo, isManual = false) {
 
     } catch (error) {
         console.error('Error updating live train data:', error);
-        const statusElement = document.getElementById('currentStatus');
+        let statusElement = document.getElementById('trainInfoLive');
         if (statusElement) {
             statusElement.innerHTML = `<div class="error">Error: ${error.message || 'Failed to fetch live data'}</div>`;
         }
