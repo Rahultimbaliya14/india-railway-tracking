@@ -45,6 +45,47 @@ h1 {
     max-width: 600px;
     margin-left: auto;
     margin-right: auto;
+    position: relative;
+    align-items: center;
+}
+
+/* Loading spinner */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.search-box.loading button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    padding: 0;
+    margin: 0;
+    pointer-events: none;
+    position: relative;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-box.loading button::after {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ffffff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+.search-box.loading button:disabled {
+    background-color: #4a90e2;
+    cursor: not-allowed;
+    opacity: 0.8;
 }
 
 input[type="text"] {
@@ -63,15 +104,21 @@ input[type="text"]:focus {
 }
 
 button {
-    background-color: #3498db;
+    background-color: #4a90e2;
     color: white;
     border: none;
-    padding: 0 24px;
+    padding: 14px 24px;
     border-radius: 8px;
     cursor: pointer;
+    font-size: 16px;
     font-weight: 600;
-    transition: background-color 0.3s, transform 0.2s;
-    font-size: 15px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 100px;
+    position: relative;
+    overflow: hidden;
 }
 
 button:hover {
@@ -187,6 +234,7 @@ button:active {
     border-radius: 3px;
     overflow: hidden;
     margin-bottom: 40px;
+    background: linear-gradient(90deg, #00c6ff, #0072ff);
     position: relative;
 }
 
@@ -579,23 +627,12 @@ span {
 
 .station-card {
     position: relative;
-    padding: 20px 0 20px 30px;
-    border-left: 3px solid #e9ecef;
-    margin-left: 15px;
+    padding: 20px 10px 20px 10px;
+    
     transition: all 0.3s ease;
 }
 
-.station-card::before {
-    content: '';
-    position: absolute;
-    left: -9px;
-    top: 28px;
-    width: 15px;
-    height: 15px;
-    border-radius: 50%;
-    background: #adb5bd;
-    transition: all 0.3s ease;
-}
+
 
 .station-card.current {
     border-left-color: #3498db;
@@ -912,6 +949,7 @@ animation: fadeIn 0.5s ease;
     font-weight: 600;
     padding: 10px;
     width: 40px;
+    min-width: 0px;
     height: 40px;
     border-radius: 50%;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
@@ -1157,3 +1195,26 @@ animation: fadeIn 0.5s ease;
 .station-card:nth-child(3) { animation-delay: 0.3s; }
 .station-card:nth-child(4) { animation-delay: 0.4s; }
 .station-card:nth-child(5) { animation-delay: 0.5s; }
+
+/* Copyright Footer */
+.copyright-footer {
+    text-align: center;
+    padding: 20px 0;
+    
+    color: #6c757d;
+    font-size: 14px;
+    border-top: 1px solid #e9ecef;
+    background: #fff;
+    width: 100%;
+}
+
+.copyright-footer p {
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .copyright-footer {
+        padding: 15px 0;
+        font-size: 13px;
+    }
+}

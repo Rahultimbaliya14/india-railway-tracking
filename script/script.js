@@ -248,15 +248,19 @@ async function updateLiveTrainData(trainNo, isManual = false) {
             s.station && currentStation && 
             s.station.toLowerCase().includes(lastArrivedStation.station.toLowerCase().split('-')[0].trim())
         );
-        
         if (currentStationIndex === -1) currentStationIndex = 0;
         
-        const nextStation = currentStationIndex < stations.length - 1 
-            ? stations[currentStationIndex + 1].station 
+        const nextStation = currentActual < stations.length - 1 
+            ? stations[currentActual + 1].station 
             : 'Destination';
-            
+        
         document.getElementById('nextStation').textContent = nextStation;
         
+        const preStation = currentActual < stations.length - 1 
+            ? stations[currentActual].station 
+            : 'Destination';
+        document.getElementById('currentStation').textContent = preStation || '-';
+
         // Update delay status
         const delayStatus = getDelayStatus(data.trainStatus.currentTrainStationDelay || 'On Time');
         const delayElement = document.getElementById('delay');
@@ -319,7 +323,7 @@ async function updateLiveTrainData(trainNo, isManual = false) {
 
         // Update progress
         const progress = stations.length > 1 
-            ? Math.round((currentStationIndex / (stations.length - 1)) * 100) 
+            ? Math.round((currentActual / (stations.length - 1)) * 100) 
             : 0;
             
         const progressBar = document.getElementById('progressBar');
@@ -490,10 +494,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const handleSearch = async () => {
         const trainNo = trainNumberInput.value.trim();
+        const searchBox = document.querySelector('.search-box');
+        const searchBtn = document.getElementById('searchButton');
+        
         if (!trainNo) {
             alert('Please enter a train number');
             return;
         }
+        
+        // Set loading state
+        searchBox.classList.add('loading');
+        searchBtn.disabled = true;
+        searchBtn.textContent = ''; // Remove text during loading
         
         const activeTab = document.querySelector('.tab-button.active').getAttribute('data-tab');
         
@@ -507,11 +519,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 // Initial data load
                 await updateLiveTrainData(trainNo);
-                // Set up auto-refresh every 30 seconds
                 window.liveDataInterval = setInterval(() => document.getElementById('refreshButton').click(), 80000);
             }
         } catch (error) {
             console.error('Search error:', error);
+            // Show error to user
+            const resultDiv = document.querySelector(activeTab === 'route-tab' ? '#result' : '#liveTrackingContent');
+            if (resultDiv) {
+                resultDiv.innerHTML = `
+                    <div class="error-message">
+                        <p>Error: Could not fetch train data. Please try again.</p>
+                    </div>
+                `;
+            }
+        } finally {
+            // Reset loading state
+            searchBox.classList.remove('loading');
+            searchBtn.disabled = false;
+            searchBtn.textContent = 'Search';
         }
     };
     
