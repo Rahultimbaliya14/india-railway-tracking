@@ -175,10 +175,51 @@ function getDelayStatus(delay) {
 // Track if this is a manual refresh
 let isManualRefresh = false;
 
+// Format date to DD-MMM-YY format
+function formatDateForAPI(date) {
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = monthNames[d.getMonth()];
+    const year = String(d.getFullYear()).slice(-2);
+    return `${day}-${month}-${year}`;
+}
+
+// Initialize date picker
+function initializeDatePicker() {
+    const dateInput = document.getElementById('journeyDate');
+    if (dateInput) {
+        // Set max date to today
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        dateInput.max = todayStr;
+        
+        // Set a default date (30 days ago from today)
+        const defaultDate = new Date();
+        defaultDate.setDate(today.getDate() - 30);
+        const defaultDateStr = defaultDate.toISOString().split('T')[0];
+        
+        // Set min date to 1 year ago from today
+        const minDate = new Date();
+        minDate.setFullYear(today.getFullYear() - 1);
+        dateInput.min = minDate.toISOString().split('T')[0];
+        
+        // If no date is set, default to today
+        if (!dateInput.value) {
+            dateInput.value = todayStr;
+        }
+        
+        // Make sure the date picker is visible
+        dateInput.style.visibility = 'visible';
+        dateInput.style.opacity = '1';
+    }
+}
+
 // Update live train information
 async function updateLiveTrainData(trainNo, isManual = false) {
     const liveTrackingContent = document.getElementById('liveTrackingContent');
     const refreshButton = document.getElementById('refreshButton');
+    const journeyDate = document.getElementById('journeyDate').value || new Date().toISOString().split('T')[0];
     
     // If this is a manual refresh, show loading on refresh button
     if (isManual && refreshButton) {
@@ -196,13 +237,8 @@ async function updateLiveTrainData(trainNo, isManual = false) {
         if (liveTrackingContent && !isManual) {
             liveTrackingContent.style.display = 'none';
         }
-        // Format today's date as DD-MMM-YY (e.g., 03-Sep-25)
-        const today = new Date();
-        const day = String(today.getDate()).padStart(2, '0');
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const month = monthNames[today.getMonth()];
-        const year = String(today.getFullYear()).slice(-2); // Get last 2 digits of year
-        const formattedDate = `${day}-${month}-${year}`;
+        // Format selected date as DD-MMM-YY (e.g., 03-Sep-25)
+        const formattedDate = formatDateForAPI(journeyDate);
         
         const response = await fetch('https://node-rahul-timbaliya.vercel.app/api/train/getTrainCurrentLocation', {
             method: 'POST',
@@ -397,17 +433,40 @@ async function updateLiveTrainData(trainNo, isManual = false) {
 // Initialize tabs
 function initTabs() {
     const tabButtons = document.querySelectorAll('.tab-button');
-    
+    const tabContents = document.querySelectorAll('.tab-content');
+    const dateSelector = document.querySelector('.date-selector');
+
+    // Initially hide the date selector
+    if (dateSelector) {
+        dateSelector.style.display = 'none';
+    }
+
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
-            // Remove active class from all buttons and tabs
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            
-            // Add active class to clicked button and corresponding tab
-            button.classList.add('active');
+            // Hide all tab contents
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Deactivate all buttons
+            tabButtons.forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show the selected tab content
             const tabId = button.getAttribute('data-tab');
-            document.getElementById(tabId).classList.add('active');
+            const tabContent = document.getElementById(tabId);
+            tabContent.classList.add('active');
+            button.classList.add('active');
+
+            // Show/hide date selector based on active tab
+            if (dateSelector) {
+                if (tabId === 'live-tab') {
+                    dateSelector.style.display = 'flex';
+                } else {
+                    dateSelector.style.display = 'none';
+                }
+            }
         });
     });
 }
@@ -477,6 +536,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize tabs
     initTabs();
     
+    // Initialize date picker
+    initializeDatePicker();
+    
+    // Add refresh button event listener
     // Add refresh button event listener
     const refreshButton = document.getElementById('refreshButton');
     if (refreshButton) {
@@ -484,6 +547,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const trainNo = document.getElementById('trainNumber').value.trim();
             if (trainNo) {
                 updateLiveTrainData(trainNo, true);
+            }
+        });
+    }
+    
+    // Add date change listener to refresh data when date changes
+    const dateInput = document.getElementById('journeyDate');
+    if (dateInput) {
+        dateInput.addEventListener('change', () => {
+            // Only refresh if we're on the live-tab
+            if (document.getElementById('live-tab').classList.contains('active')) {
+                const trainNo = document.getElementById('trainNumber').value.trim();
+                if (trainNo) {
+                    updateLiveTrainData(trainNo, true);
+                }
             }
         });
     }

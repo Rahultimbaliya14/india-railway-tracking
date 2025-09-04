@@ -37,6 +37,177 @@ h1 {
     font-weight: 600;
 }
 
+/* Date Selector */
+#live-tab .date-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin: 0 auto 30px;
+    padding: 18px 25px;
+    max-width: 600px;
+    background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(149, 157, 165, 0.12);
+    border: 1px solid rgba(52, 144, 220, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+#live-tab .date-selector::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3498db, #5e72e4);
+}
+
+.date-selector label {
+    font-size: 16px;
+    font-weight: 600;
+    color: #4a5568;
+    white-space: nowrap;
+    margin: 0;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.date-selector label::before {
+    content: '📅';
+    font-size: 18px;
+    opacity: 0.8;
+}
+
+.date-selector input[type="date"] {
+    padding: 14px 20px;
+    border: 2px solid #e1e8ed;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #2d3748;
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 220px;
+    text-align: left;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%234a5568' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 18px;
+    padding-right: 46px;
+    position: relative;
+    z-index: 1;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Modern focus effect */
+.date-selector input[type="date"]:focus {
+    border-color: #5e72e4;
+    box-shadow: 0 0 0 3px rgba(94, 114, 228, 0.2);
+    transform: translateY(-1px);
+    background-color: #ffffff;
+}
+
+/* Hover effect */
+.date-selector input[type="date"]:hover {
+    border-color: #a3bffa;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* Active state */
+.date-selector input[type="date"]:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Disabled state */
+.date-selector input[type="date"]:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #f7fafc;
+    border-color: #e2e8f0;
+}
+
+.date-selector input[type="date"]:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+    transform: translateY(-1px);
+    background-color: #fff;
+}
+
+/* Custom styling for the calendar dropdown */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+}
+
+/* Hover state */
+.date-selector input[type="date"]:hover {
+    border-color: #b8c2cc;
+    background-color: #fff;
+}
+
+/* Disabled dates styling */
+.date-selector input[type="date"]:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Responsive adjustments */
+@media (max-width: 580px) {
+    #live-tab .date-selector {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 20px 18px;
+        margin: 0 15px 25px;
+        border-radius: 12px;
+    }
+    
+    .date-selector label {
+        justify-content: center;
+        font-size: 15px;
+    }
+    
+    .date-selector input[type="date"] {
+        width: 100%;
+        margin: 0;
+        padding: 14px 16px;
+        text-align: center;
+        background-position: 92% center;
+    }
+    
+    .date-selector label::before {
+        display: none;
+    }
+}
+
+/* Animation for date picker container */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#live-tab .date-selector {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
 /* Search Box */
 .search-box {
     display: flex;
