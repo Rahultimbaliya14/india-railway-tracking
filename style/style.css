@@ -43,7 +43,6 @@ body {
 .search-box button {
     background-color: rgb(74, 144, 226);
     color: white;
-    padding: 0 24px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
