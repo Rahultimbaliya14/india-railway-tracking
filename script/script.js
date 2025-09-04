@@ -1,6 +1,6 @@
 async function fetchTrainData(trainNumber) {
     try {
-        const response = await fetch(`https://node-rahul-timbaliya.vercel.app/api/train/getTrainRouteInfo/${trainNumber}`);
+        const response = await fetch(`http://localhost:3000/api/train/getTrainRouteInfo/${trainNumber}`);
         if (!response.ok) {
             throw new Error('Train not found or API error');
         }
@@ -204,13 +204,13 @@ async function updateLiveTrainData(trainNo, isManual = false) {
         const year = String(today.getFullYear()).slice(-2); // Get last 2 digits of year
         const formattedDate = `${day}-${month}-${year}`;
         
-        const response = await fetch('https://node-rahul-timbaliya.vercel.app/api/train/getTrainCurrentLocation', {
+        const response = await fetch('http://localhost:3000/api/train/getTrainCurrentLocation', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                trainNumber: parseInt(trainNo),
+                trainNumber: trainNo,
                 date: formattedDate
             })
         });

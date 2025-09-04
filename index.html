@@ -1,28 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <title>Train Tracking</title>
     <link rel="stylesheet" href="style/style.css">
 </head>
+
 <body>
     <div class="container">
         <h1>Train Tracking System</h1>
-        
+
         <!-- Tabs -->
         <div class="tabs">
             <button class="tab-button active" data-tab="route-tab">Route Information</button>
             <button class="tab-button" data-tab="live-tab">Live Tracking</button>
         </div>
-        
+
         <!-- Search Box -->
         <div class="search-box">
             <input type="text" id="trainNumber" placeholder="Enter Train Number" required>
-       
+
             <button id="searchButton">Search</button>
         </div>
-        
+
         <!-- Route Information Tab -->
         <div id="route-tab" class="tab-content active">
             <div id="result" class="result">
@@ -30,7 +33,7 @@
                 <div id="stationList" class="station-list"></div>
             </div>
         </div>
-        
+
         <!-- Live Tracking Tab -->
         <div id="live-tab" class="tab-content">
             <div id="liveTrackingContent" style="display: none;">
@@ -48,80 +51,80 @@
                         <button id="refreshButton" class="refresh-button" title="Refresh data" aria-label="Refresh">
                             <span class="refresh-icon">⟳</span>
                         </button>
-                    <div class="train-meta">
-                        <div class="meta-item">
-                            <span class="meta-label">Departure</span>
-                            <span id="departureTime">-</span>
-                        </div>
-                        <div class="meta-item">
-                            <span class="meta-label">Arrival</span>
-                            <span id="arrivalTime">-</span>
-                        </div>
-                        <div class="meta-item">
-                            <span class="meta-label">Duration</span>
-                            <span id="duration">-</span>
-                        </div>
-                        <div class="meta-item">
-                            <span class="meta-label">Distance</span>
-                            <span id="distance">-</span>
+                        <div class="train-meta">
+                            <div class="meta-item">
+                                <span class="meta-label">Departure</span>
+                                <span id="departureTime">-</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Arrival</span>
+                                <span id="arrivalTime">-</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Duration</span>
+                                <span id="duration">-</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Distance</span>
+                                <span id="distance">-</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Train Status Card -->
-                <div id="liveTrainInfo" class="live-train-info">
-                    <!-- Will be populated by JavaScript -->
-                </div>
+                    <!-- Train Status Card -->
+                    <div id="liveTrainInfo" class="live-train-info">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
 
-                <!-- Current Status -->
-                <div class="current-status-card">
-                    <h3>Current Status</h3>
-                    <div class="status-grid">
-                        <div class="status-item">
-                            <span class="status-label">Current Station:</span>
-                            <span id="currentStation" class="status-value">-</span>
+                    <!-- Current Status -->
+                    <div class="current-status-card">
+                        <h3>Current Status</h3>
+                        <div class="status-grid">
+                            <div class="status-item">
+                                <span class="status-label">Current Station:</span>
+                                <span id="currentStation" class="status-value">-</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Next Station:</span>
+                                <span id="nextStation" class="status-value">-</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Last Update:</span>
+                                <span id="lastUpdate" class="status-value">-</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Delay:</span>
+                                <span id="delay" class="status-value">On Time</span>
+                            </div>
                         </div>
-                        <div class="status-item">
-                            <span class="status-label">Next Station:</span>
-                            <span id="nextStation" class="status-value">-</span>
+                    </div>
+
+                    <!-- Station Information Section -->
+                    <div class="station-info-container">
+                        <h3>Route Stations</h3>
+                        <div class="progress-container">
+                            <div id="progressBar" class="progress-bar">
+                                <div class="progress"></div>
+                            </div>
+                            <div id="progressText" class="progress-text">0% Complete</div>
                         </div>
-                        <div class="status-item">
-                            <span class="status-label">Last Update:</span>
-                            <span id="lastUpdate" class="status-value">-</span>
+                        <div id="stationListContainer" class="station-list">
+                            <!-- Station list will be populated by JavaScript -->
                         </div>
-                        <div class="status-item">
-                            <span class="status-label">Delay:</span>
-                            <span id="delay" class="status-value">On Time</span>
+                    </div>
+
+                    <!-- Map Container -->
+                    <div class="map-container">
+                        <div id="map">
+                            <p class="map-placeholder">Train location will be displayed here</p>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Station Information Section -->
-                <div class="station-info-container">
-                    <h3>Route Stations</h3>
-                    <div class="progress-container">
-                        <div id="progressBar" class="progress-bar">
-                            <div class="progress"></div>
-                        </div>
-                        <div id="progressText" class="progress-text">0% Complete</div>
-                    </div>
-                    <div id="stationListContainer" class="station-list">
-                        <!-- Station list will be populated by JavaScript -->
-                    </div>
-                </div>
-                
-                <!-- Map Container -->
-                <div class="map-container">
-                    <div id="map">
-                        <p class="map-placeholder">Train location will be displayed here</p>
-                    </div>
-                </div>
-        </div>
-    </div>
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossorigin=""></script>
-    <script src="script/script.js"></script>
+            </div>
+            <!-- Leaflet JS -->
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+                integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+            <script src="script/script.js"></script>
 </body>
+
 </html>
