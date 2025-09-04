@@ -206,7 +206,8 @@ async function updateLiveTrainData(trainNo, isManual = false) {
         refreshButton.classList.add('refreshing');
         isManualRefresh = true;
     }
-    
+    let statusElement = document.getElementById('trainInfoLive');
+    statusElement.innerHTML = '';
     try {
         if (!isManual) {
             showLoading(true);
@@ -231,7 +232,6 @@ async function updateLiveTrainData(trainNo, isManual = false) {
         
         if (!data.trainStatus) {
             let statusElement = document.getElementById("trainInfoLive")
-            console.log(statusElement);
             statusElement.innerHTML = `<div class="error">Error: No live data available for this train</div>`;
             throw new Error('No live data available for this train');
             
@@ -382,7 +382,7 @@ async function updateLiveTrainData(trainNo, isManual = false) {
         console.error('Error updating live train data:', error);
         let statusElement = document.getElementById('trainInfoLive');
         if (statusElement) {
-            statusElement.innerHTML = `<div class="error">Error: ${error.message || 'Failed to fetch live data'}</div>`;
+            statusElement.innerHTML = `<div class="error">Error: 'Failed to fetch live data'</div>`;
         }
     } finally {
         const refreshButton = document.getElementById('refreshButton');
@@ -401,31 +401,32 @@ async function updateLiveTrainData(trainNo, isManual = false) {
 function initTabs() {
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
-    const dateSelector = document.querySelector('.date-selector');
-
-    if (dateSelector) {
-        dateSelector.style.display = 'none';
-    }
+    const searchBox = document.querySelector('.search-box');
+    const trainNumberInput = document.getElementById('trainNumber');
+    const searchButton = document.getElementById('searchButton');
 
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-            });
-            tabButtons.forEach(btn => {
-                btn.classList.remove('active');
-            });
-
-            const tabId = button.getAttribute('data-tab');
-            const tabContent = document.getElementById(tabId);
-            tabContent.classList.add('active');
+            // Remove active class from all buttons and contents
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Add active class to clicked button and corresponding content
             button.classList.add('active');
-            if (dateSelector) {
-                if (tabId === 'live-tab') {
-                    dateSelector.style.display = 'flex';
-                } else {
-                    dateSelector.style.display = 'none';
-                }
+            const tabId = button.getAttribute('data-tab');
+            document.getElementById(tabId).classList.add('active');
+            
+            // Show/hide search box based on active tab
+            if (tabId === 'route-tab' || tabId === 'live-tab') {
+                searchBox.style.display = 'flex';
+                trainNumberInput.style.display = 'block';
+                searchButton.style.display = 'block';
+            } else if (tabId === 'pnr-tab') {
+                searchBox.style.display = 'flex';
+                trainNumberInput.style.display = 'none';
+                searchButton.style.display = 'none';
+            } else {
+                searchBox.style.display = 'none';
             }
         });
     });
@@ -542,7 +543,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.liveDataInterval = setInterval(() => document.getElementById('refreshButton').click(), 80000);
             }
         } catch (error) {
-            console.error('Search error:', error);
             const resultDiv = document.querySelector(activeTab === 'route-tab' ? '#result' : '#liveTrackingContent');
             if (resultDiv) {
                 resultDiv.innerHTML = `
@@ -566,7 +566,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 function initializeTrainAutocomplete() {
-    console.log('Initializing train autocomplete...');
     const trainInput = document.getElementById('trainNumber');
     const searchButton = document.getElementById('searchButton');
     let suggestionsContainer;
@@ -600,11 +599,8 @@ function initializeTrainAutocomplete() {
 
     function filterTrains(input) {
         const inputValue = input.trim().toLowerCase();
-        console.log('Filtering trains for input:', inputValue);
         if (!inputValue) return [];
-        console.log(window);
         const trainData = window.arrTrainList || [];
-        console.log('Total trains in data:', trainData.length);
         const results = [];
         
         for (const trainStr of trainData) {
@@ -630,10 +626,7 @@ function initializeTrainAutocomplete() {
 
     function showSuggestions() {
         const input = trainInput.value.trim();
-        console.log('Showing suggestions for input:', input);
-        const filteredTrains = filterTrains(input);
-        console.log('Filtered trains:', filteredTrains.length);
-        
+        const filteredTrains = filterTrains(input);        
         suggestionsContainer.innerHTML = '';
         
         if (filteredTrains.length === 0 || !input) {
@@ -725,4 +718,207 @@ function initializeTrainAutocomplete() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', initializeTrainAutocomplete);
+// Function to fetch PNR status
+async function fetchPnrStatus(pnrNumber) {
+    try {
+        const response = await fetch(`https://node-rahul-timbaliya.vercel.app/api/train/getPNRInfo`,{
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+               pnrNumber : pnrNumber
+            })
+        });
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching PNR status:', error);
+        throw error;
+    }
+}
+
+// Function to display PNR status
+function displayPnrStatus(pnrData) {
+    const pnrResult = document.getElementById('pnrResult');
+    
+    if (!pnrData || !pnrData.pnr) {
+        pnrResult.innerHTML = '<div class="error">No PNR data found</div>';
+        return;
+    }
+
+    const { pnr, trainNumber, trainName, dateOfJourney, from, to, departureTime, arrivalTime, duration, 
+            boardingPoint, boardingPointPlatformNumber, coachPosition, passengerStatus, bookingDetails } = pnrData;
+    
+    // Determine status badge class based on passenger status
+    const statusClass = passengerStatus && passengerStatus[0] ? 
+        passengerStatus[0].currentStatusCurrent.toLowerCase() : 'unknown';
+    const statusText = passengerStatus && passengerStatus[0] ? 
+        passengerStatus[0].currentStatus : 'Status not available';
+
+    let html = `
+        <div class="pnr-status-card">
+            <div class="pnr-header">
+                <h3>PNR: ${pnr}</h3>
+                <span class="status-badge ${statusClass}">${statusText}</span>
+            </div>
+            
+            <div class="train-info">
+                <h4>${trainName} (${trainNumber})</h4>
+                <div class="journey-details">
+                    <span>Date: ${dateOfJourney}</span>
+                    <span>Class: ${bookingDetails?.bookingClass || 'N/A'}</span>
+                    <span>Quota: ${bookingDetails?.bookingQuota || 'N/A'}</span>
+                </div>
+                <div class="route">
+                    <div class="station">
+                        <span class="station-name">${from}</span>
+                        <span class="station-time">${departureTime}</span>
+                    </div>
+                    <span class="coach">${duration} Hours</span>
+                    <div class="station">
+                        <span class="station-name">${to}</span>
+                        <span class="station-time">${arrivalTime}</span>
+                    </div>
+                </div>
+                <div class="boarding-info">
+                    <div>Boarding: ${boardingPoint}</div>
+                    <div>Platform: ${boardingPointPlatformNumber || 'Not specified'}</div>
+                </div>
+                
+                <div class="coach-position">
+                    <h4>Coach Position</h4>
+                    <div class="coach-sequence">
+                        ${(coachPosition || '').split(' ').map(coach => {
+                            const isAllocated = passengerStatus && passengerStatus.some(p => p.currentCoachId === coach || p.bookingCoachId === coach);
+                            return `<span class="coach ${isAllocated ? 'allocated' : ''}" title="${isAllocated ? 'Your coach' : ''}">${coach}</span>`;
+                        }).join(' → ')}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="passenger-list">
+                <h4>Passenger Details</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>Booking Status</th>
+                            <th>Current Status</th>
+                            <th>Coach</th>
+                            <th>Berth</th>
+                            <th>Class</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+    (passengerStatus || []).forEach((passenger, index) => {
+        html += `
+                        <tr>
+                            <td>${passenger.number || index + 1}</td>
+                            <td>${passenger.bookingStatus || '-'}</td>
+                            <td>${passenger.currentStatus || '-'}</td>
+                            <td>${passenger.currentCoachId || passenger.bookingCoachId || '-'}</td>
+                            <td>${passenger.currentBerthNo || passenger.bookingBerthNo || '-'}</td>
+                            <td>${bookingDetails?.bookingClass || '-'}</td>
+                        </tr>`;
+    });
+
+    html += `
+                    </tbody>
+                </table>
+                
+                <div class="booking-details">
+                    <h4>Booking Details</h4>
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Booking Date:</span>
+                            <span class="detail-value">${bookingDetails?.bookingDate || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Fare:</span>
+                            <span class="detail-value">₹${bookingDetails?.ticketFare || '0'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Class:</span>
+                            <span class="detail-value">${bookingDetails?.bookingClass || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Quota:</span>
+                            <span class="detail-value">${bookingDetails?.bookingQuota || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+    pnrResult.innerHTML = html;
+}
+
+// Function to handle PNR check
+async function checkPnrStatus() {
+    const pnrInput = document.getElementById('pnrNumber');
+    const pnrNumber = pnrInput.value.trim();
+    const pnrResult = document.getElementById('pnrResult');
+    const checkPnrButton = document.getElementById('checkPnrButton');
+    const spinner = checkPnrButton.querySelector('.spinner');
+    const buttonText = checkPnrButton.querySelector('.button-text');
+
+    if (!pnrNumber || pnrNumber.length !== 10) {
+        // Add shake effect
+        pnrInput.classList.add('shake');
+        pnrInput.focus();
+        
+        // Remove the shake class after animation completes
+        setTimeout(() => {
+            pnrInput.classList.remove('shake');
+        }, 500);
+        
+       
+        return;
+    }
+
+    try {
+        // Show loading state
+        checkPnrButton.disabled = true;
+        spinner.style.display = 'inline-block';
+        buttonText.textContent = 'Checking...';
+        pnrResult.innerHTML = '<div class="loading">Fetching PNR status...</div>';
+
+        const pnrData = await fetchPnrStatus(pnrNumber);
+        displayPnrStatus(pnrData);
+    } catch (error) {
+        console.error('Error checking PNR status:', error);
+        pnrResult.innerHTML = `<div class="error">Error: ${error.message || 'Failed to fetch PNR status'}</div>`;
+    } finally {
+        // Reset button state
+        checkPnrButton.disabled = false;
+        spinner.style.display = 'none';
+        buttonText.textContent = 'Check Status';
+    }
+}
+
+// Initialize PNR tab functionality
+function initPnrTab() {
+    const checkPnrButton = document.getElementById('checkPnrButton');
+    if (checkPnrButton) {
+        checkPnrButton.addEventListener('click', checkPnrStatus);
+    }
+
+    const pnrInput = document.getElementById('pnrNumber');
+    if (pnrInput) {
+        pnrInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkPnrStatus();
+            }
+        });
+    }
+}
+
+// Update the DOMContentLoaded event listener
+document.addEventListener('DOMContentLoaded', () => {
+    initTabs();
+    initializeDatePicker();
+    initPnrTab();
+    initializeTrainAutocomplete();
+});

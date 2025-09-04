@@ -17,6 +17,7 @@
         <div class="tabs">
             <button class="tab-button active" data-tab="route-tab">Route Information</button>
             <button class="tab-button" data-tab="live-tab">Live Tracking</button>
+            <button class="tab-button" data-tab="pnr-tab">PNR Status</button>
         </div>
 
         <!-- Search Box -->
@@ -133,22 +134,31 @@
                 </div>
             </div>
         </div>
+
+        <!-- PNR Status Tab -->
+        <div id="pnr-tab" class="tab-content">
+            <div class="search-box">
+                <input type="text" id="pnrNumber" placeholder="Enter 10-digit PNR Number" inputmode="numeric" pattern="\d{10}" maxlength="10" autocomplete="off" required>
+                <button id="checkPnrButton">
+                    <span class="spinner"></span>
+                    <span class="button-text">Check Status</span>
+                </button>
+            </div>
+            <div id="pnrResult" class="pnr-result">
+                <!-- PNR result will be displayed here -->
+            </div>
+        </div>
+
         <!-- Footer -->
         <footer class="copyright-footer">
             <p>&copy; 2025 Rahul Timbaliya. All rights reserved.</p>
         </footer>
     </div>
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+   
     <!-- Load train data first -->
     <script src="https://enquiry.indianrail.gov.in/mntes/javascripts/train_data.js?v=2"></script>
     <!-- Then load main script -->
     <script src="script/script.js"></script>
-    <script>
-        // Add debug logging
-        console.log('Train data loaded:', typeof arrTrainList !== 'undefined' ? arrTrainList.length + ' trains' : 'Not found');
-    </script>
 </body>
 
 </html>
