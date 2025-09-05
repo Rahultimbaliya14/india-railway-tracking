@@ -200,14 +200,24 @@ function initializeDatePicker() {
 async function updateLiveTrainData(trainNo, isManual = false) {
     const liveTrackingContent = document.getElementById('liveTrackingContent');
     const refreshButton = document.getElementById('refreshButton');
+    const statusElement = document.getElementById('trainInfoLive');
     const journeyDate = document.getElementById('journeyDate').value || new Date().toISOString().split('T')[0];
+
+    // Clear previous content if this is not a manual refresh
+    if (!isManual) {
+        if (statusElement) statusElement.innerHTML = '';
+        if (liveTrackingContent) {
+            liveTrackingContent.style.display = 'none';
+            // Clear any existing station cards or progress bars
+            const existingContent = liveTrackingContent.querySelectorAll('.station-card, .progress-bar');
+            existingContent.forEach(el => el.remove());
+        }
+    }
 
     if (isManual && refreshButton) {
         refreshButton.classList.add('refreshing');
         isManualRefresh = true;
     }
-    let statusElement = document.getElementById('trainInfoLive');
-    statusElement.innerHTML = '';
     try {
         if (!isManual) {
             showLoading(true);
@@ -410,25 +420,48 @@ function initTabs() {
     const searchBox = document.querySelector('.search-box');
     const trainNumberInput = document.getElementById('trainNumber');
     const searchButton = document.getElementById('searchButton');
+    let currentTab = 'route-tab'; // Track current tab
 
     // Function to handle tab switching
     function switchTab(button) {
+        // Don't do anything if clicking the same tab
+        const tabId = button.getAttribute('data-tab');
+        if (tabId === currentTab) return;
+        
+        // Store the current scroll position before switching tabs
+        const currentContent = document.getElementById(currentTab);
+        const scrollPosition = currentContent.scrollTop;
+        
         // Remove active class from all buttons and contents
         tabButtons.forEach(btn => btn.classList.remove('active'));
         tabContents.forEach(content => content.classList.remove('active'));
 
         // Add active class to clicked button and corresponding content
         button.classList.add('active');
-        const tabId = button.getAttribute('data-tab');
-        document.getElementById(tabId).classList.add('active');
+        const newTab = document.getElementById(tabId);
+        newTab.classList.add('active');
+        
+        // Restore scroll position for the new tab
+        newTab.scrollTop = scrollPosition;
+        
+        // Update current tab
+        currentTab = tabId;
 
         // Show/hide search box based on active tab
         if (tabId === 'route-tab' || tabId === 'live-tab') {
             searchBox.style.display = 'flex';
             trainNumberInput.style.display = 'block';
             searchButton.style.display = 'block';
+            
+            // Focus the search input when switching to these tabs
+            if (tabId === 'route-tab' || tabId === 'live-tab') {
+                trainNumberInput.focus();
+            }
         } else if (tabId === 'pnr-tab') {
             searchBox.style.display = 'none';
+            // Focus PNR input when switching to PNR tab
+            const pnrInput = document.getElementById('pnrNumber');
+            if (pnrInput) pnrInput.focus();
         }
     }
 
@@ -522,6 +555,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const clearPreviousContent = () => {
+        // Only clear if we're on the live-tab
+        const activeTab = document.querySelector('.tab-button.active')?.getAttribute('data-tab');
+        if (activeTab !== 'live-tab') return;
+        
+        // Clear the main content areas
+        const liveTrackingContent = document.getElementById('liveTrackingContent');
+        const statusElement = document.getElementById('trainInfoLive');
+        const liveTrainInfo = document.getElementById('liveTrainInfo');
+        
+        // Reset all text fields to default but only if they're in the active tab
+        const elementsToClear = [
+            'trainNumberfirst', 'fromStation', 'toStation', 
+            'departureTime', 'arrivalTime', 'duration', 
+            'distance', 'currentStation', 'nextStation',
+            'lastStation', 'delay', 'trainSpeed',
+            'trainLocation', 'platformNumber', 'stationCode'
+        ];
+        
+        elementsToClear.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && el.closest('.tab-content.active')) {
+                el.textContent = '-';
+            }
+        });
+        
+        // Only clear content in the active tab
+        if (liveTrackingContent && liveTrackingContent.closest('.tab-content.active')) {
+            liveTrackingContent.style.display = 'none';
+            const progressBar = liveTrackingContent.querySelector('.progress-bar');
+            if (progressBar) progressBar.remove();
+            
+            const stationCards = liveTrackingContent.querySelectorAll('.station-card');
+            stationCards.forEach(card => card.remove());
+        }
+        
+        if (statusElement && statusElement.closest('.tab-content.active')) {
+            statusElement.innerHTML = '';
+        }
+        
+        if (liveTrainInfo && liveTrainInfo.closest('.tab-content.active')) {
+            liveTrainInfo.innerHTML = '';
+        }
+        
+        // Clear any error messages in the active tab
+        const activeContent = document.querySelector('.tab-content.active');
+        if (activeContent) {
+            const errorMessages = activeContent.querySelectorAll('.error, .error-message');
+            errorMessages.forEach(error => error.remove());
+        }
+    };
+
     const handleSearch = async () => {
         const trainNo = trainNumberInput.value.trim();
         if (!trainNo) {
@@ -539,9 +624,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (searchButton.classList.contains('loading')) {
             return;
         }
+        
+        // Clear any previous intervals
+        if (window.liveDataInterval) {
+            clearInterval(window.liveDataInterval);
+            window.liveDataInterval = null;
+        }
+        
+        // Clear previous content before new search
+        clearPreviousContent();
+        
         setLoading(true);
 
-        const activeTab = document.querySelector('.tab-button.active').getAttribute('data-tab');
+        const activeTab = document.querySelector('.tab-button.active')?.getAttribute('data-tab');
+        if (!activeTab) {
+            console.error('No active tab found');
+            setLoading(false);
+            return;
+        }
 
         try {
             if (activeTab === 'route-tab') {
