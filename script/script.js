@@ -18,19 +18,19 @@ function formatTime(timeStr) {
 function getCurrentStationIndex(routeData) {
     const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes();
-    
+
     for (let i = 0; i < routeData.length; i++) {
         const station = routeData[i];
         if (station.arrival === 'First') continue;
-        
+
         const [hours, minutes] = station.arrival.split(':').map(Number);
         const stationTime = hours * 60 + minutes;
-        
+
         if (stationTime > currentTime) {
             return i > 0 ? i - 1 : 0;
         }
     }
-    
+
     return routeData.length - 1;
 }
 
@@ -50,9 +50,9 @@ async function trackTrain() {
         stationListDiv.innerHTML = '';
         resultDiv.style.display = 'block';
         const trainData = await fetchTrainData(trainNumber);
-        
+
         const currentStationIndex = getCurrentStationIndex(trainData.routeData);
-        
+
         trainInfoDiv.innerHTML = `
             <div class="train-header">
                 <h2>${trainData.trainName} (${trainData.trainNumber})</h2>
@@ -86,18 +86,18 @@ async function trackTrain() {
             </div>
         `;
 
-      
-        
+
+
         let stationsHTML = '<div class="station-list-container">';
         trainData.routeData.forEach((station, index) => {
             const isCurrent = index === currentStationIndex;
             const isPassed = index < currentStationIndex;
             const isFirst = station.arrival === 'First';
             const isLast = station.departure === 'Last';
-            
+
             const stdTime = station.std ? formatTime(station.std) : '-';
             const etdTime = station.etd ? formatTime(station.etd) : '-';
-            
+
             stationsHTML += `
                 <div class="station-card">
                     <div class="station-timeline">
@@ -151,7 +151,7 @@ function formatTime(timeStr) {
 function showLoading(show) {
     const loading = document.getElementById('loading');
     const content = document.getElementById('content');
-    
+
     if (loading && content) {
         loading.style.display = show ? 'flex' : 'none';
         content.style.display = show ? 'none' : 'block';
@@ -179,19 +179,19 @@ function initializeDatePicker() {
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
         dateInput.max = todayStr;
-        
+
         const defaultDate = new Date();
         defaultDate.setDate(today.getDate() - 30);
         const defaultDateStr = defaultDate.toISOString().split('T')[0];
-        
+
         const minDate = new Date();
         minDate.setFullYear(today.getFullYear() - 1);
         dateInput.min = minDate.toISOString().split('T')[0];
-        
+
         if (!dateInput.value) {
             dateInput.value = todayStr;
         }
-        
+
         dateInput.style.visibility = 'visible';
         dateInput.style.opacity = '1';
     }
@@ -201,7 +201,7 @@ async function updateLiveTrainData(trainNo, isManual = false) {
     const liveTrackingContent = document.getElementById('liveTrackingContent');
     const refreshButton = document.getElementById('refreshButton');
     const journeyDate = document.getElementById('journeyDate').value || new Date().toISOString().split('T')[0];
-    
+
     if (isManual && refreshButton) {
         refreshButton.classList.add('refreshing');
         isManualRefresh = true;
@@ -212,12 +212,12 @@ async function updateLiveTrainData(trainNo, isManual = false) {
         if (!isManual) {
             showLoading(true);
         }
-        
+
         if (liveTrackingContent && !isManual) {
             liveTrackingContent.style.display = 'none';
         }
         const formattedDate = formatDateForAPI(journeyDate);
-        
+
         const response = await fetch('https://node-rahul-timbaliya.vercel.app/api/train/getTrainCurrentLocation', {
             method: 'POST',
             headers: {
@@ -229,17 +229,18 @@ async function updateLiveTrainData(trainNo, isManual = false) {
             })
         });
         const data = await response.json();
-        
+
         if (!data.trainStatus) {
             let statusElement = document.getElementById("trainInfoLive")
             statusElement.innerHTML = `<div class="error">Error: No live data available for this train</div>`;
             throw new Error('No live data available for this train');
-            
+
         }
+
         if (liveTrackingContent) {
             liveTrackingContent.style.display = 'block';
         }
-        
+
         document.getElementById('trainNumberfirst').textContent = `${data.trainNumber} - ${data.trainName}`;
         document.getElementById('fromStation').textContent = data.fromStation;
         document.getElementById('toStation').textContent = data.toStation;
@@ -247,51 +248,52 @@ async function updateLiveTrainData(trainNo, isManual = false) {
         document.getElementById('arrivalTime').textContent = formatTime(data.arrivalTime);
         document.getElementById('duration').textContent = data.duration;
         document.getElementById('distance').textContent = `${data.travelingKMS} km`;
-        
-        const currentStation = data.trainStatus.currentTrainStation;
-        document.getElementById('currentStation').textContent = currentStation || '-';
-        
-        const stations = data.trainStatus.station || [];
-        let currentStationIndex = stations.findIndex(s => 
-            s.station && currentStation && 
-            s.station.toLowerCase().includes(currentStation.toLowerCase().split(' (')[0])
-        );
-        const lastArrivedStation = [...stations].reverse().find(s => s.arrived === "Yes" || !s.platformNumber.includes('*'));
-        let currentActual  = stations.findIndex(s => 
-            s.station && currentStation && 
-            s.station.toLowerCase().includes(lastArrivedStation.station.toLowerCase().split('-')[0].trim())
-        );
-        if (currentStationIndex === -1) currentStationIndex = 0;
-        
-        const nextStation = currentActual < stations.length - 1 
-            ? stations[currentActual + 1].station 
-            : 'Destination';
-        
-        document.getElementById('nextStation').textContent = nextStation;
-        
-        const preStation = currentActual < stations.length - 1 
-            ? stations[currentActual].station 
-            : 'Destination';
-        document.getElementById('currentStation').textContent = preStation || '-';
 
-        const delayStatus = getDelayStatus(data.trainStatus.currentTrainStationDelay || 'On Time');
-        const delayElement = document.getElementById('delay');
-        delayElement.textContent = delayStatus.text;
-        delayElement.className = `info-value ${delayStatus.class}`;
-        
-        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        debugger;
+        if (data.trainStatus.trainStatus != "Yet to start from its source" && data.trainStatus.station[0].station != "undefined - undefined") {
+            const currentStation = data.trainStatus.currentTrainStation;
+            document.getElementById('currentStation').textContent = currentStation || '-';
 
-        const stationListContainer = document.getElementById('stationListContainer');
-        if (stationListContainer) {
-            const stationItems = stations.map((station, index) => {
-                const isCurrent = index === currentStationIndex;
-                const isPassed = station.arrived === 'Yes' || station.arrived === '-' || !station.platformNumber.includes('*')  || index < currentStationIndex;
-                const status = isPassed ? 'Departed' : isCurrent ? 'Current' : 'Upcoming';
-                
-                // Format station name (remove station code if present)
-                const stationName = station.station.split(' - ')[0].trim();
-                const stationCode = station.station.split(' - ')[1].trim();
-                return `
+            const stations = data.trainStatus.station || [];
+            let currentStationIndex = stations.findIndex(s =>
+                s.station && currentStation &&
+                s.station.toLowerCase().includes(currentStation.toLowerCase().split(' (')[0])
+            );
+            const lastArrivedStation = [...stations].reverse().find(s => s.arrived === "Yes" || !s.platformNumber.includes('*'));
+            let currentActual = stations.findIndex(s =>
+                s.station && currentStation &&
+                s.station.toLowerCase().includes(lastArrivedStation.station.toLowerCase().split('-')[0].trim())
+            );
+            if (currentStationIndex === -1) currentStationIndex = 0;
+
+            const nextStation = currentActual < stations.length - 1
+                ? stations[currentActual + 1].station
+                : 'Destination';
+
+            document.getElementById('nextStation').textContent = nextStation;
+
+            const preStation = currentActual < stations.length - 1
+                ? stations[currentActual].station
+                : 'Destination';
+            document.getElementById('currentStation').textContent = preStation || '-';
+
+            const delayStatus = getDelayStatus(data.trainStatus.currentTrainStationDelay || 'On Time');
+            const delayElement = document.getElementById('delay');
+            delayElement.textContent = delayStatus.text;
+            delayElement.className = `info-value ${delayStatus.class}`;
+
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+            const stationListContainer = document.getElementById('stationListContainer');
+            if (stationListContainer) {
+                const stationItems = stations.map((station, index) => {
+                    const isCurrent = index === currentStationIndex;
+                    const isPassed = station.arrived === 'Yes' || station.arrived === '-' || !station.platformNumber.includes('*') || index < currentStationIndex;
+                    const status = isPassed ? 'Departed' : isCurrent ? 'Current' : 'Upcoming';
+
+                    // Format station name (remove station code if present)
+                    const stationName = station.station.split(' - ')[0].trim();
+                    const stationCode = station.station.split(' - ')[1].trim();
+                    return `
                     <div class="station-item ${isCurrent ? 'current' : ''} ${isPassed ? 'passed' : ''}">
                         <div class="station-details">
                             <div class="station-header">
@@ -325,26 +327,26 @@ async function updateLiveTrainData(trainNo, isManual = false) {
                         </div>
                     </div>
                 `;
-            }).join('');
-            
-            stationListContainer.className = 'station-list';
-            stationListContainer.innerHTML = stationItems;
-        }
+                }).join('');
 
-        const progress = stations.length > 1 
-            ? Math.round((currentActual / (stations.length - 1)) * 100) 
-            : 0;
-            
-        const progressBar = document.getElementById('progressBar');
-        const progressText = document.getElementById('progressText');
-        if (progressBar && progressText) {
-            progressBar.style.width = `${progress}%`;
-            progressText.textContent = `${progress}% Complete`;
-        }
-        
-        const trainStatusCard = document.createElement('div');
-        trainStatusCard.className = 'train-status-card';
-        trainStatusCard.innerHTML = `
+                stationListContainer.className = 'station-list';
+                stationListContainer.innerHTML = stationItems;
+            }
+
+            const progress = stations.length > 1
+                ? Math.round((currentActual / (stations.length - 1)) * 100)
+                : 0;
+
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            if (progressBar && progressText) {
+                progressBar.style.width = `${progress}%`;
+                progressText.textContent = `${progress}% Complete`;
+            }
+
+            const trainStatusCard = document.createElement('div');
+            trainStatusCard.className = 'train-status-card';
+            trainStatusCard.innerHTML = `
             <div class="status-header">
                 <h3>${data.trainName || 'Train Status'}</h3>
                 <span class="status-badge ${delayStatus.class}">${delayStatus.text}</span>
@@ -367,17 +369,20 @@ async function updateLiveTrainData(trainNo, isManual = false) {
                 </div>
             </div>
         `;
-        
-        const statusContainer = document.getElementById('liveTrainInfo');
-        if (statusContainer) {
-            const existingCard = statusContainer.querySelector('.train-status-card');
-            if (existingCard) {
-                statusContainer.replaceChild(trainStatusCard, existingCard);
-            } else {
-                statusContainer.insertBefore(trainStatusCard, statusContainer.firstChild);
+
+            const statusContainer = document.getElementById('liveTrainInfo');
+            if (statusContainer) {
+                const existingCard = statusContainer.querySelector('.train-status-card');
+                if (existingCard) {
+                    statusContainer.replaceChild(trainStatusCard, existingCard);
+                } else {
+                    statusContainer.insertBefore(trainStatusCard, statusContainer.firstChild);
+                }
             }
         }
-
+        else{
+            document.getElementById('currentStation').textContent = data.trainStatus.trainStatus || '-';
+        }
     } catch (error) {
         console.error('Error updating live train data:', error);
         let statusElement = document.getElementById('trainInfoLive');
@@ -389,13 +394,14 @@ async function updateLiveTrainData(trainNo, isManual = false) {
         if (refreshButton) {
             refreshButton.classList.remove('refreshing');
         }
-        
+
         if (!isManualRefresh) {
             showLoading(false);
         }
-        
+
         isManualRefresh = false;
     }
+
 }
 
 function initTabs() {
@@ -410,12 +416,12 @@ function initTabs() {
         // Remove active class from all buttons and contents
         tabButtons.forEach(btn => btn.classList.remove('active'));
         tabContents.forEach(content => content.classList.remove('active'));
-        
+
         // Add active class to clicked button and corresponding content
         button.classList.add('active');
         const tabId = button.getAttribute('data-tab');
         document.getElementById(tabId).classList.add('active');
-        
+
         // Show/hide search box based on active tab
         if (tabId === 'route-tab' || tabId === 'live-tab') {
             searchBox.style.display = 'flex';
@@ -430,7 +436,7 @@ function initTabs() {
     tabButtons.forEach(button => {
         button.addEventListener('click', () => switchTab(button));
     });
-    
+
     // Initialize first tab as active
     if (tabButtons.length > 0) {
         switchTab(tabButtons[0]);
@@ -442,42 +448,42 @@ function initMap() {
 }
 
 function updateTrainLocation(lat, lng) {
-    
+
 }
 
 function simulateLiveTrainData() {
     if (window.liveDataInterval) {
         clearInterval(window.liveDataInterval);
     }
-    
+
     let currentStationIndex = 0;
-    
+
     window.liveDataInterval = setInterval(() => {
-        document.getElementById('currentStation').textContent = 
+        document.getElementById('currentStation').textContent =
             `${stations[currentStationIndex].name} (${stations[currentStationIndex].code})`;
-            
+
         if (currentStationIndex < stations.length - 1) {
-            document.getElementById('nextStation').textContent = 
+            document.getElementById('nextStation').textContent =
                 `${stations[currentStationIndex + 1].name} (${stations[currentStationIndex + 1].code})`;
         } else {
             document.getElementById('nextStation').textContent = 'Terminus';
         }
-        
+
         const now = new Date();
         document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
-        
+
         const speedElement = document.getElementById('speedValue');
         speedElement.style.color = speed > 100 ? '#e74c3c' : '#2ecc71';
-        
+
         currentStationIndex = (currentStationIndex + 1) % stations.length;
-        
-    }, 5000); 
+
+    }, 5000);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     initTabs();
     initializeDatePicker();
-    
+
     const refreshButton = document.getElementById('refreshButton');
     if (refreshButton) {
         refreshButton.addEventListener('click', () => {
@@ -487,7 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     const dateInput = document.getElementById('journeyDate');
     if (dateInput) {
         dateInput.addEventListener('change', () => {
@@ -499,10 +505,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     const searchButton = document.getElementById('searchButton');
     const trainNumberInput = document.getElementById('trainNumber');
-    
+
     function setLoading(isLoading) {
         const searchButton = document.getElementById('searchButton');
         if (searchButton) {
@@ -536,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setLoading(true);
 
         const activeTab = document.querySelector('.tab-button.active').getAttribute('data-tab');
-        
+
         try {
             if (activeTab === 'route-tab') {
                 await trackTrain();
@@ -560,14 +566,14 @@ document.addEventListener('DOMContentLoaded', () => {
             setLoading(false);
         }
     };
-    
+
     searchButton.addEventListener('click', handleSearch);
     trainNumberInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             handleSearch();
         }
     });
-    
+
 
 });
 function initializeTrainAutocomplete() {
@@ -579,7 +585,7 @@ function initializeTrainAutocomplete() {
         suggestionsContainer = document.createElement('div');
         suggestionsContainer.id = 'suggestionsContainer';
         suggestionsContainer.className = 'suggestions-container';
-        
+
         const searchBox = trainInput.closest('.search-box');
         if (searchBox) {
             searchBox.style.position = 'relative';
@@ -607,38 +613,38 @@ function initializeTrainAutocomplete() {
         if (!inputValue) return [];
         const trainData = window.arrTrainList || [];
         const results = [];
-        
+
         for (const trainStr of trainData) {
             const trainInfo = parseTrainInfo(trainStr);
             if (trainInfo) {
                 const trainNumber = trainInfo.number.toLowerCase();
                 const trainName = trainInfo.name.toLowerCase();
-                
+
                 if (trainNumber.includes(inputValue) || trainName.includes(inputValue)) {
                     results.push({
                         number: trainInfo.number,
                         name: trainInfo.name,
                         display: trainInfo.number + ' - ' + trainInfo.name
                     });
-                    
-                    if (results.length >= 10) break; 
+
+                    if (results.length >= 10) break;
                 }
             }
         }
-        
+
         return results;
     }
 
     function showSuggestions() {
         const input = trainInput.value.trim();
-        const filteredTrains = filterTrains(input);        
+        const filteredTrains = filterTrains(input);
         suggestionsContainer.innerHTML = '';
-        
+
         if (filteredTrains.length === 0 || !input) {
             suggestionsContainer.style.display = 'none';
             return;
         }
-        
+
         filteredTrains.forEach((train, index) => {
             const suggestion = document.createElement('div');
             suggestion.className = 'suggestion-item';
@@ -652,7 +658,7 @@ function initializeTrainAutocomplete() {
                 suggestionsContainer.style.display = 'none';
                 if (searchButton) searchButton.click();
             });
-            
+
             suggestion.addEventListener('mouseenter', () => {
                 const items = suggestionsContainer.querySelectorAll('.suggestion-item');
                 items.forEach(item => item.classList.remove('selected'));
@@ -677,19 +683,19 @@ function initializeTrainAutocomplete() {
                 suggestion.classList.remove('selected');
             }
         });
-        
+
         if (index === -1 && trainInput.value.trim() === '') {
             trainInput.value = '';
         }
-        
+
         selectedIndex = index;
     }
-    
+
     trainInput.addEventListener('input', showSuggestions);
-    
+
     trainInput.addEventListener('keydown', (e) => {
         const suggestions = suggestionsContainer.querySelectorAll('.suggestion-item');
-        
+
         if (e.key === 'ArrowDown') {
             e.preventDefault();
             selectedIndex = Math.min(selectedIndex + 1, suggestions.length - 1);
@@ -715,7 +721,7 @@ function initializeTrainAutocomplete() {
             }, 10);
         }
     });
-    
+
     document.addEventListener('click', (e) => {
         if (!trainInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
             suggestionsContainer.style.display = 'none';
@@ -726,13 +732,13 @@ function initializeTrainAutocomplete() {
 // Function to fetch PNR status
 async function fetchPnrStatus(pnrNumber) {
     try {
-        const response = await fetch(`https://node-rahul-timbaliya.vercel.app/api/train/getPNRInfo`,{
+        const response = await fetch(`https://node-rahul-timbaliya.vercel.app/api/train/getPNRInfo`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-               pnrNumber : pnrNumber
+                pnrNumber: pnrNumber
             })
         });
         const data = await response.json();
@@ -746,19 +752,19 @@ async function fetchPnrStatus(pnrNumber) {
 // Function to display PNR status
 function displayPnrStatus(pnrData) {
     const pnrResult = document.getElementById('pnrResult');
-    
+
     if (!pnrData || !pnrData.pnr) {
         pnrResult.innerHTML = '<div class="error">No PNR data found</div>';
         return;
     }
 
-    const { pnr, trainNumber, trainName, dateOfJourney, from, to, departureTime, arrivalTime, duration, 
-            boardingPoint, boardingPointPlatformNumber, coachPosition, passengerStatus, bookingDetails } = pnrData;
-    
+    const { pnr, trainNumber, trainName, dateOfJourney, from, to, departureTime, arrivalTime, duration,
+        boardingPoint, boardingPointPlatformNumber, coachPosition, passengerStatus, bookingDetails } = pnrData;
+
     // Determine status badge class based on passenger status
-    const statusClass = passengerStatus && passengerStatus[0] ? 
+    const statusClass = passengerStatus && passengerStatus[0] ?
         passengerStatus[0].currentStatusCurrent.toLowerCase() : 'unknown';
-    const statusText = passengerStatus && passengerStatus[0] ? 
+    const statusText = passengerStatus && passengerStatus[0] ?
         passengerStatus[0].currentStatus : 'Status not available';
 
     let html = `
@@ -795,9 +801,9 @@ function displayPnrStatus(pnrData) {
                     <h4>Coach Position</h4>
                     <div class="coach-sequence">
                         ${(coachPosition || '').split(' ').map(coach => {
-                            const isAllocated = passengerStatus && passengerStatus.some(p => p.currentCoachId === coach || p.bookingCoachId === coach);
-                            return `<span class="coach ${isAllocated ? 'allocated' : ''}" title="${isAllocated ? 'Your coach' : ''}">${coach}</span>`;
-                        }).join(' → ')}
+        const isAllocated = passengerStatus && passengerStatus.some(p => p.currentCoachId === coach || p.bookingCoachId === coach);
+        return `<span class="coach ${isAllocated ? 'allocated' : ''}" title="${isAllocated ? 'Your coach' : ''}">${coach}</span>`;
+    }).join(' → ')}
                     </div>
                 </div>
             </div>
@@ -873,13 +879,13 @@ async function checkPnrStatus() {
         // Add shake effect
         pnrInput.classList.add('shake');
         pnrInput.focus();
-        
+
         // Remove the shake class after animation completes
         setTimeout(() => {
             pnrInput.classList.remove('shake');
         }, 500);
-        
-       
+
+
         return;
     }
 
