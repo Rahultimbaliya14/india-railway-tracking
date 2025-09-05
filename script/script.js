@@ -209,7 +209,7 @@ async function updateLiveTrainData(trainNo, isManual = false) {
         if (liveTrackingContent) {
             liveTrackingContent.style.display = 'none';
             // Clear any existing station cards or progress bars
-            const existingContent = liveTrackingContent.querySelectorAll('.station-card, .progress-bar');
+            const existingContent = liveTrackingContent.querySelectorAll('.station-card');
             existingContent.forEach(el => el.remove());
         }
     }
@@ -584,8 +584,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Only clear content in the active tab
         if (liveTrackingContent && liveTrackingContent.closest('.tab-content.active')) {
             liveTrackingContent.style.display = 'none';
-            const progressBar = liveTrackingContent.querySelector('.progress-bar');
-            if (progressBar) progressBar.remove();
             
             const stationCards = liveTrackingContent.querySelectorAll('.station-card');
             stationCards.forEach(card => card.remove());
