@@ -202,7 +202,7 @@ async function updateLiveTrainData(trainNo, isManual = false) {
     const refreshButton = document.getElementById('refreshButton');
     const statusElement = document.getElementById('trainInfoLive');
     const journeyDate = document.getElementById('journeyDate').value || new Date().toISOString().split('T')[0];
-
+    document.getElementById('statusContainer').style.display = 'block';
     // Clear previous content if this is not a manual refresh
     if (!isManual) {
         if (statusElement) statusElement.innerHTML = '';
@@ -259,7 +259,6 @@ async function updateLiveTrainData(trainNo, isManual = false) {
         document.getElementById('duration').textContent = data.duration;
         document.getElementById('distance').textContent = `${data.travelingKMS} km`;
 
-        debugger;
         if (data.trainStatus.trainStatus != "Yet to start from its source" && data.trainStatus.station[0].station != "undefined - undefined") {
             const currentStation = data.trainStatus.currentTrainStation;
             document.getElementById('currentStation').textContent = currentStation || '-';
@@ -391,6 +390,7 @@ async function updateLiveTrainData(trainNo, isManual = false) {
             }
         }
         else{
+            document.getElementById('statusContainer').style.display = 'none';
             document.getElementById('currentStation').textContent = data.trainStatus.trainStatus || '-';
         }
     } catch (error) {
