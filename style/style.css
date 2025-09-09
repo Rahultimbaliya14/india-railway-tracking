@@ -1524,6 +1524,53 @@ animation: fadeIn 0.5s ease;
 .station-card:nth-child(4) { animation-delay: 0.4s; }
 .station-card:nth-child(5) { animation-delay: 0.5s; }
 
+/* Day Separator Styles */
+.day-separator {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    color: #666;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.day-separator::before,
+.day-separator::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #e0e0e0, transparent);
+    margin: 0 10px;
+}
+
+.day-text {
+    background: #f5f5f5;
+    padding: 4px 12px;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+    color: #555;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Adjust station card spacing */
+.station-card {
+    margin-bottom: 16px;
+    transition: all 0.3s ease;
+}
+
+.station-card:last-child {
+    margin-bottom: 0;
+}
+
+/* Add some space above the first station after day separator */
+.day-separator + .station-card {
+    margin-top: 12px;
+}
+
 /* Copyright Footer */
 /* PNR Status Styles */
 .pnr-status-card {

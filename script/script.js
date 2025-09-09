@@ -88,12 +88,27 @@ async function trackTrain() {
 
 
 
-        let stationsHTML = '<div class="station-list-container">';
+        let stationsHTML = '<div class="stations-container">';
+        let currentDay = null;
         trainData.routeData.forEach((station, index) => {
+            const isFirst = index === 0;
+            const isLast = index === trainData.routeData.length - 1;
+            
+            // Add day separator if day changes
+            if (station.day !== currentDay) {
+                currentDay = station.day;
+                if (!isFirst) {  // Don't add separator before the first station
+                    stationsHTML += `
+                        <div class="day-separator">
+                            <span class="day-text">Day ${currentDay}</span>
+                            <span class="day-line"></span>
+                        </div>`;
+                }
+            }
             const isCurrent = index === currentStationIndex;
             const isPassed = index < currentStationIndex;
-            const isFirst = station.arrival === 'First';
-            const isLast = station.departure === 'Last';
+            const isFirstStation = station.arrival === 'First';
+            const isLastStation = station.departure === 'Last';
 
             const stdTime = station.std ? formatTime(station.std) : '-';
             const etdTime = station.etd ? formatTime(station.etd) : '-';
@@ -113,15 +128,15 @@ async function trackTrain() {
                         <div class="station-times">
                             <div class="time-block">
                                 <span class="time-label">Arrival</span>
-                                <span class="time">${isFirst ? 'Source' : station.arrival}</span>
+                                <span class="time">${isFirstStation ? 'Source' : station.arrival}</span>
                             </div>
                             <div class="time-block">
                                 <span class="time-label">Departure</span>
-                                <span class="time">${isLast ? 'Destination' : station.departure}</span>
+                                <span class="time">${isLastStation ? 'Destination' : station.departure}</span>
                             </div>
                             <div class="time-block">
                                 <span class="time-label">Day</span>
-                                <span class="time">${station.day}</span>
+                                <span class="time">${isFirstStation ? '1' : station.day}</span>
                             </div>
                         </div>
 
@@ -395,6 +410,7 @@ async function updateLiveTrainData(trainNo, isManual = false) {
         }
     } catch (error) {
         console.error('Error updating live train data:', error);
+        document.getElementById('statusContainer').style.display = 'none';
         let statusElement = document.getElementById('trainInfoLive');
         if (statusElement) {
             statusElement.innerHTML = `<div class="error">Error: 'Failed to fetch live data'</div>`;
