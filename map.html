@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,68 +24,424 @@
             height: 100vh;
         }
 
-        .station-popup {
-            font-weight: bold;
-            text-align: center;
-        }
-
         .controls {
             position: absolute;
             top: 10px;
             right: 10px;
             z-index: 1000;
             background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            max-width: 200px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease-out;
+        }
+.leaflet-control-zoom { display: none !important; }
+        .controls.collapsed {
+            transform: translateX(calc(100% - 0px));
         }
 
-        .controls button {
+        .toggle-button {
+            position: absolute;
+            left: -42px;
+            
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: none;
+            border-radius: 10px;
+            /* box-shadow: -2px 2px 10px rgba(0, 0, 0, 0.15); */
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #3b82f6;
+            transition: background 0.3s;
+        }
+
+        .toggle-button:hover {
+            background: #f8fafc;
+        }
+
+        .controls-content {
+            padding: 16px;
+            max-width: 280px;
+        }
+
+        .controls-content button {
             display: block;
             width: 100%;
             margin: 5px 0;
-            padding: 8px 15px;
-            background: #4CAF50;
+            padding: 10px 15px;
+            background: #3b82f6;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
+            font-weight: 600;
+            transition: background 0.3s;
         }
 
-        .controls button:hover {
-            background: #45a049;
+        .controls-content button:hover {
+            background: #2563eb;
         }
 
-        .controls button.toggle {
-            background: #2196F3;
+        #fullMapButton {
+            margin-bottom: 0 !important;
         }
 
-        .controls button.toggle:hover {
-            background: #0b7dda;
+        .toggle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 8px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            transition: background 0.3s;
+        }
+
+        .toggle-header:hover {
+            background: #e2e8f0;
+        }
+
+        .toggle-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1f2937;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .toggle-icon {
+            font-size: 18px;
+            color: #3b82f6;
+            transition: transform 0.3s;
+        }
+
+        .toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .info-content {
+            max-height: 500px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            opacity: 1;
+        }
+
+        .info-content.collapsed {
+            max-height: 0;
+            opacity: 0;
         }
 
         .info {
-            font-size: 12px;
-            color: #666;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #ddd;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
         }
 
-        .info div {
+        .train-info-card {
+            background: white;
+            border-radius: 12px;
+        }
+
+        .train-header {
+            text-align: center;
+            margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .train-number {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .train-name {
+            font-size: 12px;
+            color: #1f2937;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .journey-section {
+            margin-bottom: 12px;
+            padding: 10px;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .journey-item {
+            margin-bottom: 6px;
+        }
+
+        .journey-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .journey-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: #3b82f6;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .journey-value {
+            font-size: 11px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .current-station-section {
+            margin-bottom: 12px;
+            padding: 10px;
+            border: 2px solid #22c55e;
+            border-radius: 8px;
+            background: #f0fdf4;
+        }
+
+        .current-station-section .journey-label {
+            color: #22c55e;
+        }
+
+        .delay-info {
+            display: inline-block;
+            background: #fef3c7;
+            color: #92400e;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+
+        .delay-info.on-time {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .train-stats {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 9px;
+            color: #6b7280;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .stat-value {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        /* Station Card Styles */
+        .leaflet-popup-content-wrapper {
+            padding: 0;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .leaflet-popup-content {
+            margin: 0;
+            width: 220px !important;
+        }
+
+        .station-card {
+            background: white;
+            padding: 16px;
+            font-family: Arial, sans-serif;
+            border-radius: 12px;
+        }
+
+        .station-header {
+            text-align: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .station-code {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .station-name {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+
+        .station-status {
+            color: #22c55e;
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        .station-status.scheduled {
+            color: #f59e0b;
+        }
+
+        .timeline {
+            position: relative;
+            margin: 14px 0;
+        }
+
+        .timeline-section {
+            margin-bottom: 14px;
+            padding: 10px;
+            position: relative;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .timeline-section.expected {
+            border-color: #ef4444;
+        }
+
+        .timeline-item {
+            margin-bottom: 8px;
+        }
+
+        .timeline-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .timeline-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: #3b82f6;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .timeline-section.expected .timeline-label {
+            color: #ef4444;
+        }
+
+        .timeline-time {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .station-footer {
+            text-align: center;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 10px;
+        }
+
+        .footer-item {
+            font-size: 11px;
+            color: #4b5563;
             margin: 3px 0;
+        }
+
+        .delay-badge {
+            display: inline-block;
+            background: #fef3c7;
+            color: #92400e;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+
+        .delay-badge.on-time {
+            background: #d1fae5;
+            color: #065f46;
         }
     </style>
 </head>
+
 <body>
-    <div class="controls">
-        <button onclick="toggleRoute()">Toggle Route Line</button>
-        <button class="toggle" onclick="toggleMainStations()">Toggle Main Stations</button>
-        <div class="info">
-            <div><strong>Main Stations:</strong> <span id="mainStationCount">0</span></div>
-            <div><strong>Route Stations:</strong> <span id="routeStationCount">0</span></div>
+    <div class="controls" id="controlsPanel">
+        <button class="toggle-button" onclick="toggleSidePanel()">◀</button>
+
+        <div class="controls-content">
+            <button id="fullMapButton" onclick="fullMap()">Full Map</button>
+
+            <div class="info" id="trainInfoSection">
+
+
+                <div class="info-content" id="infoContent">
+                    <div class="train-info-card">
+                        <div class="train-header">
+                            <div class="train-number" id="trainNumber">--</div>
+                            <div class="train-name" id="trainName">Loading...</div>
+                        </div>
+
+                        <div class="journey-section">
+                            <div class="journey-item">
+                                <div class="journey-label">FROM</div>
+                                <div class="journey-value" id="fromStation">--</div>
+                            </div>
+                            <div class="journey-item">
+                                <div class="journey-label">TO</div>
+                                <div class="journey-value" id="toStation">--</div>
+                            </div>
+                        </div>
+
+                        <div class="current-station-section">
+                            <div class="journey-item">
+                                <div class="journey-label">CURRENT STATION</div>
+                                <div class="journey-value" id="currentStation">--</div>
+                            </div>
+                            <div class="journey-item">
+                                <div class="journey-label">STATUS</div>
+                                <div class="journey-value" id="trainStatus">--</div>
+                            </div>
+                            <div class="journey-item" id="delayContainer" style="display: none;">
+                                <div class="journey-label">DELAY</div>
+                                <div class="delay-info" id="delayInfo">--</div>
+                            </div>
+                        </div>
+
+                        <div class="train-stats">
+                            <div class="stat-item">
+                                <div class="stat-label">Duration</div>
+                                <div class="stat-value" id="duration">--</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Distance</div>
+                                <div class="stat-value" id="distance">--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <div id="map"></div>
@@ -93,12 +450,83 @@
     <script src="script/mapHelper.js"></script>
 
     <script>
+        var currentStationCode;
         var mainStation = [];
         var station = [];
+        var trainData = null;
 
         const urlParams = new URLSearchParams(window.location.search);
         const trainNumber = urlParams.get("trainNumber");
         const date = urlParams.get("date");
+        const fullMapParam = urlParams.get("fullMap");
+        if (fullMapParam === "true") {
+            document.getElementById("fullMapButton").style.display = "none";
+            document.getElementById("trainInfoSection").style.marginTop = "0";
+            document.getElementById("trainInfoSection").style.paddingTop= "0";
+            document.getElementById("trainInfoSection").style.borderTop = "0";
+        }
+
+        function fullMap() {
+            window.open(window.location.href + "&fullMap=true", "_blank");
+
+        }
+
+        function toggleSidePanel() {
+            const panel = document.getElementById('controlsPanel');
+            const button = panel.querySelector('.toggle-button');
+
+            panel.classList.toggle('collapsed');
+
+            // Change arrow direction
+            if (panel.classList.contains('collapsed')) {
+                button.textContent = '▶';
+            } else {
+                button.textContent = '◀';
+            }
+        }
+
+        function toggleTrainInfo() {
+            const content = document.getElementById('infoContent');
+            const icon = document.getElementById('toggleIcon');
+
+            content.classList.toggle('collapsed');
+            icon.classList.toggle('collapsed');
+        }
+
+        function updateTrainInfoCard() {
+            if (!trainData) return;
+
+            // Update train header
+            document.getElementById("trainNumber").textContent = trainData.trainNumber;
+            document.getElementById("trainName").textContent = trainData.trainName;
+
+            // Update journey details
+            document.getElementById("fromStation").textContent = trainData.fromStation;
+            document.getElementById("toStation").textContent = trainData.toStation;
+
+            // Update current station
+            const currentStationName = trainData.trainStatus.currentTrainStation.split("(")[0].trim();
+            document.getElementById("currentStation").textContent = currentStationName;
+            document.getElementById("trainStatus").textContent = trainData.trainStatus.trainStatus.split("at")[0].trim();
+
+            // Update delay information
+            const delayTime = trainData.trainStatus.currentTrainStationDelay;
+            if (delayTime && delayTime !== "00:00") {
+                document.getElementById("delayContainer").style.display = "block";
+                const delayElement = document.getElementById("delayInfo");
+                delayElement.textContent = delayTime;
+                delayElement.className = "delay-info"; // Yellow background for delay
+            } else {
+                document.getElementById("delayContainer").style.display = "block";
+                const delayElement = document.getElementById("delayInfo");
+                delayElement.textContent = "On Time";
+                delayElement.className = "delay-info on-time"; // Green background for on time
+            }
+
+            // Update stats
+            document.getElementById("duration").textContent = trainData.duration;
+            document.getElementById("distance").textContent = trainData.travelingKMS + " km";
+        }
 
         async function loadTrainData() {
             const requestBody = {
@@ -118,34 +546,102 @@
                     }
                 );
 
-                const data = await response.json();
+                trainData = await response.json();
+                currentStationCode = trainData.trainStatus.currentTrainStation.split(" ")[0].trim();
+                console.log("Current Station Code:", currentStationCode);
 
-
-                const apiMainStations = data.trainStatus.station.map(item => {
+                const apiMainStations = trainData.trainStatus.station.map(item => {
                     return item.station.split("-").pop().trim();
                 });
-                const routeStations = data.fullRouteData.map(r => r.station.trim());
+                const routeStations = trainData.fullRouteData.map(r => r.station.trim());
                 mainStation = apiMainStations;
                 station = routeStations;
+
+                // Update the info card
+                updateTrainInfoCard();
 
             } catch (error) {
                 console.error("❌ Error loading train data:", error);
             }
         }
 
+        // Function to create station card HTML
+        function createStationCard(stationCode) {
+            // Find station data from trainStatus
+            const stationInfo = trainData.trainStatus.station.find(s =>
+                s.station.split("-").pop().trim() === stationCode
+            );
+
+            if (!stationInfo) {
+                return `<div class="station-card">
+                    <div class="station-header">
+                        <div class="station-code">${stationCode}</div>
+                        <div class="station-status scheduled">No data available</div>
+                    </div>
+                </div>`;
+            }
+
+            const [stationName, code] = stationInfo.station.split(" - ");
+            const arrived = stationInfo.arrived === "Yes" || stationInfo.arrived === "-";
+            const hasDelay = stationInfo.eta && stationInfo.eta.includes("*");
+
+            return `
+                <div class="station-card">
+                    <div class="station-header">
+                        <div class="station-code">${code}</div>
+                        <div class="station-name">${stationName}</div>
+                        <div class="station-status ${arrived ? '' : 'scheduled'}">
+                            ${arrived ? 'Departed' : 'Scheduled'}
+                        </div>
+                    </div>
+
+                    <div class="timeline">
+                        ${stationInfo.sta ? `
+                        <div class="timeline-section">
+                            <div class="timeline-item">
+                                <div class="timeline-label">SCH. ARRIVAL</div>
+                                <div class="timeline-time">${stationInfo.sta}</div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-label">SCH. DEPARTURE</div>
+                                <div class="timeline-time">${stationInfo.std || stationInfo.sta}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        ${stationInfo.eta ? `
+                        <div class="timeline-section expected">
+                            <div class="timeline-item">
+                                <div class="timeline-label">EXP. ARRIVAL</div>
+                                <div class="timeline-time">${stationInfo.eta.replace('*', '')}</div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-label">EXP. DEPARTURE</div>
+                                <div class="timeline-time">${stationInfo.etd.replace('*', '')}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="station-footer">
+                        <div class="footer-item">Platform ${stationInfo.platformNumber.replace('*', '')}</div>
+                        <div class="footer-item">Distance ${stationInfo.distance} km</div>
+                        ${hasDelay ? '<div class="delay-badge">Delayed</div>' :
+                    arrived ? '<div class="delay-badge on-time">Completed</div>' : ''}
+                    </div>
+                </div>
+            `;
+        }
 
         // Initialize the map
         const map = L.map('map').setView([23.0, 72.5], 5);
-        //http://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}
-        // Add satellite tile layer (using ESRI World Imagery)
+
         L.tileLayer('http://mt0.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
             attribution: "",
             maxZoom: 30,
-           
             minZoom: 1,
         }).addTo(map);
 
-        // Add labels overlay for better readability
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
             maxZoom: 1,
@@ -153,10 +649,12 @@
         }).addTo(map);
 
         let mainStationMarkers = [];
-        let polyline = null;
+        let completedPolyline = null;
+        let remainingPolyline = null;
         let routeStationData = [];
         let showingRoute = true;
         let showingMainStations = true;
+        let trainMarker = null;
 
         // Function to add markers for main stations only
         function addMainStationMarkers() {
@@ -167,25 +665,19 @@
                         const lat = parseFloat(coords[0]);
                         const lng = parseFloat(coords[1]);
 
-                        // Create marker for main stations
-                        const marker = L.circleMarker([lat, lng], {
-                            radius: 10,
-                            fillColor: "#FF4444",
-                            color: "#FFFFFF",
-                            weight: 3,
-                            opacity: 1,
-                            fillOpacity: 0.95
-                        }).addTo(map);
+                        const myIcon = L.icon({
+                            iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+                            iconSize: [25, 25],
+                            iconAnchor: [16, 32],
+                            popupAnchor: [0, -32]
+                        });
 
-                        // Add popup with station code
-                        marker.bindPopup(`<div class="station-popup"><strong>${code}</strong><br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}</div>`);
+                        const marker = L.marker([lat, lng], { icon: myIcon }).addTo(map);
 
-                        // Add permanent label for main stations
-                        marker.bindTooltip(code, {
-                            permanent: true,
-                            direction: 'top',
-                            className: 'station-label',
-                            offset: [0, -12]
+                        // Add popup with station card
+                        marker.bindPopup(createStationCard(code), {
+                            maxWidth: 240,
+                            className: 'station-popup'
                         });
 
                         mainStationMarkers.push(marker);
@@ -194,9 +686,6 @@
                     console.error(`Error processing main station ${code}:`, error);
                 }
             });
-
-            // Update main station count
-            document.getElementById('mainStationCount').textContent = mainStationMarkers.length;
         }
 
         // Function to get route data for all stations
@@ -221,41 +710,92 @@
                 }
             });
 
-            // Update route station count
-            document.getElementById('routeStationCount').textContent = routeStationData.length;
-
             console.log(`Loaded ${routeStationData.length} stations for route`);
         }
 
         // Function to draw route connecting all stations
         function drawRoute() {
-            // Remove existing polyline if any
-            if (polyline) {
-                map.removeLayer(polyline);
+            // Remove existing polylines if any
+            if (completedPolyline) {
+                map.removeLayer(completedPolyline);
+            }
+            if (remainingPolyline) {
+                map.removeLayer(remainingPolyline);
+            }
+            if (trainMarker) {
+                map.removeLayer(trainMarker);
             }
 
-            // Create polyline from route station coordinates
-            const latlngs = routeStationData.map(s => [s.lat, s.lng]);
+            // Find the index of current station
+            const currentStationIndex = routeStationData.findIndex(s => s.code === currentStationCode);
 
-            if (latlngs.length > 0) {
-                polyline = L.polyline(latlngs, {
-                    color: '#FFD700',
-                    weight: 3,
-                    opacity: 0.8,
-                    smoothFactor: 1,
+            if (currentStationIndex === -1) {
+                console.error("Current station not found in route data");
+                return;
+            }
+
+            // Split route into completed (red) and remaining (yellow) sections
+            const completedStations = routeStationData.slice(0, currentStationIndex + 1);
+            const remainingStations = routeStationData.slice(currentStationIndex);
+
+            // Draw completed route (blue line)
+            if (completedStations.length > 1) {
+                const completedLatLngs = completedStations.map(s => [s.lat, s.lng]);
+                completedPolyline = L.polyline(completedLatLngs, {
+                    color: '#5C5CFF',
+                    weight: 5,
+                    opacity: 1,
+                    smoothFactor: 0.5,
                     lineJoin: 'round'
                 }).addTo(map);
-
-                showingRoute = true;
-                console.log(`Route drawn with ${latlngs.length} points`);
             }
+
+            // Draw remaining route (yellow line)
+            if (remainingStations.length > 1) {
+                const remainingLatLngs = remainingStations.map(s => [s.lat, s.lng]);
+                remainingPolyline = L.polyline(remainingLatLngs, {
+                    color: '#FFD700',
+                    weight: 5,
+                    opacity: 1,
+                    smoothFactor: 1,
+                    dashArray: '8, 8',
+                    lineJoin: 'round'
+                }).addTo(map);
+            }
+
+            // Add train marker at current station
+            const currentStationCoords = getStnLatLng(currentStationCode);
+            if (currentStationCoords && currentStationCoords.length === 2) {
+                const trainIcon = L.icon({
+                    iconUrl: 'https://icons.veryicon.com/png/o/education-technology/smart-technology-icon/train-38.png',
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20]
+                });
+
+                trainMarker = L.marker(currentStationCoords, { icon: trainIcon }).addTo(map);
+
+                // Simple blink effect using JavaScript
+                setInterval(() => {
+                    const currentOpacity = trainMarker.options.opacity === 1 ? 0.4 : 1;
+                    trainMarker.setOpacity(currentOpacity);
+                }, 500);
+            }
+
+            showingRoute = true;
+            console.log(`Route drawn - Completed: ${completedStations.length}, Remaining: ${remainingStations.length} stations`);
         }
 
         // Function to toggle route visibility
         function toggleRoute() {
             if (showingRoute) {
-                if (polyline) {
-                    map.removeLayer(polyline);
+                if (completedPolyline) {
+                    map.removeLayer(completedPolyline);
+                }
+                if (remainingPolyline) {
+                    map.removeLayer(remainingPolyline);
+                }
+                if (trainMarker) {
+                    map.removeLayer(trainMarker);
                 }
                 showingRoute = false;
             } else {
@@ -279,7 +819,6 @@
         function fitMapBounds() {
             const allBounds = [];
 
-            // Add main station coordinates
             mainStation.forEach(code => {
                 try {
                     const coords = getStnLatLng(code);
@@ -301,23 +840,16 @@
             console.log('Initializing map...');
             await loadTrainData();
 
-            // First, get route data (all stations)
             getRouteData();
-
-            // Then add markers for main stations only
             addMainStationMarkers();
-
-            // Draw the route line
             drawRoute();
-
-            // Fit map to show all content
             fitMapBounds();
 
             console.log('Initialization complete');
         }
 
-        // Start initialization
         initialize();
     </script>
 </body>
+
 </html>
