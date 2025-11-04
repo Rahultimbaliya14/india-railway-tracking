@@ -600,13 +600,64 @@ button:active {
     box-sizing: border-box;
 }
 
-.station-info-container h3 {
-    margin-top: 0;
-    color: #2c3e50;
-    font-size: 18px;
+.station-header-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 15px;
     padding-bottom: 10px;
     border-bottom: 1px solid #ecf0f1;
+}
+
+.station-header-controls h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 18px;
+}
+
+.toggle-switch {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 8px;
+}
+
+.toggle-switch input {
+    display: none;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 40px;
+    height: 20px;
+    background-color: #ccc;
+    border-radius: 20px;
+    transition: 0.4s;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.4s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: #3498db;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(20px);
+}
+
+.toggle-label {
+    font-size: 14px;
+    color: #666;
 }
 
 .station-progress {
@@ -811,6 +862,8 @@ span {
     border-left: 3px solid #4facfe;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     transition: all 0.2s ease;
+    flex-direction: column;
+    text-align: center;
 }
 
 .time-block:hover {
@@ -826,10 +879,38 @@ span {
     letter-spacing: 0.5px;
 }
 
+.time-divider {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .time-divider,
+    .time-section-divider {
+        display: block;
+        width: 90%;
+        height: 1px;
+        background: linear-gradient(to right, transparent, #e0e0e0, transparent);
+        margin: 15px auto;
+    }
+
+    .station-times {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .time-section-divider {
+        width: 100%;
+        margin: 20px 0;
+        height: 2px;
+        background: linear-gradient(to right, transparent, #ccc, transparent);
+    }
+}
+
 .time-block:nth-child(1) { border-left-color: #4facfe; }
 .time-block:nth-child(2) { border-left-color: #00c6ff; }
-.time-block:nth-child(3) { border-left-color: #6a11cb; }
-.time-block:nth-child(4) { border-left-color: #ff6b6b; }
+.time-block:nth-child(4) { border-left-color: #6a11cb; }
+.time-block:nth-child(5) { border-left-color: #ff6b6b; }
 
 .time-block:nth-child(1) .time-label { color: #4facfe; }
 .time-block:nth-child(2) .time-label { color: #00c6ff; }
@@ -889,6 +970,12 @@ span {
     background: #e8f5e9;
     border-color: #c8e6c9;
     color: #2e7d32;
+}
+
+.station-item.pass-through-station .station-status {
+   background: #ffebee;
+border-color: #ffcdd2;
+color: #c62828;
 }
 
 .station-platform {
@@ -1497,13 +1584,57 @@ animation: fadeIn 0.5s ease;
         transform: rotate(90deg);
         margin: 10px 0;
     }
-    
+
+    .station-details {
+        align-items: center;
+        text-align: center;
+    }
+
+    .station-header {
+        justify-content: center;
+    }
+
+    .station-title {
+        text-align: center;
+        width: 100%;
+    }
+
+    .station-badges {
+        justify-content: center;
+        width: 100%;
+    }
+
     .station-times {
-        gap: 15px;
+        gap: 10px;
+        justify-content: center;
     }
     
     .time-block {
-        min-width: 70px;
+        min-width: calc(50% - 10px);
+        justify-content: center;
+    }
+
+    .station-meta {
+        justify-content: center;
+    }
+
+    .platform-info, .distance-info {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .station-info-container {
+        padding: 15px 10px;
+    }
+
+    .station-header-controls {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .toggle-switch {
+        margin-top: 5px;
     }
 }
 

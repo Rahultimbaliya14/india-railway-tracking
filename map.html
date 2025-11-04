@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Railway Station Map</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+        
+        .station-popup {
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            max-width: 200px;
+        }
+        
+        .controls button {
+            display: block;
+            width: 100%;
+            margin: 5px 0;
+            padding: 8px 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .controls button:hover {
+            background: #45a049;
+        }
+
+        .controls button.toggle {
+            background: #2196F3;
+        }
+
+        .controls button.toggle:hover {
+            background: #0b7dda;
+        }
+        
+        .info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+        
+        .info div {
+            margin: 3px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <button onclick="toggleRoute()">Toggle Route Line</button>
+        <button class="toggle" onclick="toggleMainStations()">Toggle Main Stations</button>
+        <div class="info">
+            <div><strong>Main Stations:</strong> <span id="mainStationCount">0</span></div>
+            <div><strong>Route Stations:</strong> <span id="routeStationCount">0</span></div>
+        </div>
+    </div>
+    <div id="map"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.js"></script>
+    <script src="script/mapHelper.js"></script>
+    
+    <script>
+        // Main stations - will show markers and labels
+        const mainStation = ["MMCT","BVI","VAPI","ST","AKV","BRC","DHD","MGN","RTM","NAD","VMA","CMU","SVA","SGZ","BWM","RMA","KOTA","SWM","DPA","JP"];
+        
+        // All stations for route - only used for drawing the line
+        const station = ["MMCT","MX","PL","PBHD","DDR","MRU","MM","BA","KHAR","STC","VLP","ADH","JOS","RMAR","GMN","MDD","KILE","BVI","DIC","MIRA","BYR","NIG","BSR","NSP","VR","VTN","SAH","KLV","PLG","UOI","BOR","VGN","DRD","GVD","BRRD","UBR","SJN","BLD","KEB","VAPI","BAGD","UVD","PAD","ATUL","BL","DGI","JRS","BIM","AML","ACL","VDH","HXR","GNST","NVS","MRL","SCH","BHET","UDN","ST","URN","KSE","GTX","SYN","KDSD","KIM","KSB","HAT","PAO","SNJL","AKV","BH","CVJ","NIU","VRE","PLJ","LKD","MYG","KSPR","ITA","VRM","MPR","VS","BRC","BRCY","CYI","PIO","AIR","SMLA","LAN","CPN","BKRL","DRL","KRSA","GDA","KIZ","CCL","SAT","PPD","LMK","MAM","USRA","JKT","RET","DHD","BIO","ANAS","MGN","THDR","BJG","PCN","AGR","BMI","BOG","RTI","BILD","MRN","RTD","RTM","RTME","BOD","RNH","KUH","BRNA","NAD","RLK","MEP","LNR","VMA","THUR","TLZ","CMU","NKH","SVA","SGZ","GOH","KRLS","BWM","DKRA","JHW","RMA","MKX","KIW","DARA","RDT","ALNI","DDV","NKOT","KOTA","KCCN","GQL","GNCN","KPTN","ARE","KPZ","GKB","LBN","LKE","IDG","AMLI","RWJ","KTA","SWM","DPZ","CKB","SURL","ISA","SRAS","BNLW","CHNN","CKS","SAS","SNGN","DPA","BSGD","JP"];
+        
+        // Initialize the map
+        const map = L.map('map').setView([23.0, 72.5], 6);
+        
+        // Add satellite tile layer (using ESRI World Imagery)
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri',
+            maxZoom: 18
+        }).addTo(map);
+        
+        // Add labels overlay for better readability
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+            maxZoom: 18,
+            pane: 'shadowPane'
+        }).addTo(map);
+        
+        let mainStationMarkers = [];
+        let polyline = null;
+        let routeStationData = [];
+        let showingRoute = true;
+        let showingMainStations = true;
+        
+        // Function to add markers for main stations only
+        function addMainStationMarkers() {
+            mainStation.forEach(code => {
+                try {
+                    const coords = getStnLatLng(code);
+                    if (coords && coords.length === 2) {
+                        const lat = parseFloat(coords[0]);
+                        const lng = parseFloat(coords[1]);
+                        
+                        // Create marker for main stations
+                        const marker = L.circleMarker([lat, lng], {
+                            radius: 10,
+                            fillColor: "#FF4444",
+                            color: "#FFFFFF",
+                            weight: 3,
+                            opacity: 1,
+                            fillOpacity: 0.95
+                        }).addTo(map);
+                        
+                        // Add popup with station code
+                        marker.bindPopup(`<div class="station-popup"><strong>${code}</strong><br>Lat: ${lat.toFixed(4)}<br>Lng: ${lng.toFixed(4)}</div>`);
+                        
+                        // Add permanent label for main stations
+                        marker.bindTooltip(code, {
+                            permanent: true,
+                            direction: 'top',
+                            className: 'station-label',
+                            offset: [0, -12]
+                        });
+                        
+                        mainStationMarkers.push(marker);
+                    }
+                } catch (error) {
+                    console.error(`Error processing main station ${code}:`, error);
+                }
+            });
+            
+            // Update main station count
+            document.getElementById('mainStationCount').textContent = mainStationMarkers.length;
+        }
+        
+        // Function to get route data for all stations
+        function getRouteData() {
+            routeStationData = [];
+            
+            station.forEach(code => {
+                try {
+                    const coords = getStnLatLng(code);
+                    if (coords && coords.length === 2) {
+                        const lat = parseFloat(coords[0]);
+                        const lng = parseFloat(coords[1]);
+                        
+                        routeStationData.push({
+                            code: code,
+                            lat: lat,
+                            lng: lng
+                        });
+                    }
+                } catch (error) {
+                    console.error(`Error processing route station ${code}:`, error);
+                }
+            });
+            
+            // Update route station count
+            document.getElementById('routeStationCount').textContent = routeStationData.length;
+            
+            console.log(`Loaded ${routeStationData.length} stations for route`);
+        }
+        
+        // Function to draw route connecting all stations
+        function drawRoute() {
+            // Remove existing polyline if any
+            if (polyline) {
+                map.removeLayer(polyline);
+            }
+            
+            // Create polyline from route station coordinates
+            const latlngs = routeStationData.map(s => [s.lat, s.lng]);
+            
+            if (latlngs.length > 0) {
+                polyline = L.polyline(latlngs, {
+                    color: '#FFD700',
+                    weight: 3,
+                    opacity: 0.8,
+                    smoothFactor: 1,
+                    lineJoin: 'round'
+                }).addTo(map);
+                
+                showingRoute = true;
+                console.log(`Route drawn with ${latlngs.length} points`);
+            }
+        }
+        
+        // Function to toggle route visibility
+        function toggleRoute() {
+            if (showingRoute) {
+                if (polyline) {
+                    map.removeLayer(polyline);
+                }
+                showingRoute = false;
+            } else {
+                drawRoute();
+            }
+        }
+        
+        // Function to toggle main station markers visibility
+        function toggleMainStations() {
+            mainStationMarkers.forEach(marker => {
+                if (showingMainStations) {
+                    map.removeLayer(marker);
+                } else {
+                    marker.addTo(map);
+                }
+            });
+            showingMainStations = !showingMainStations;
+        }
+        
+        // Function to fit map bounds to show all content
+        function fitMapBounds() {
+            const allBounds = [];
+            
+            // Add main station coordinates
+            mainStation.forEach(code => {
+                try {
+                    const coords = getStnLatLng(code);
+                    if (coords && coords.length === 2) {
+                        allBounds.push([parseFloat(coords[0]), parseFloat(coords[1])]);
+                    }
+                } catch (error) {
+                    console.error(`Error getting bounds for ${code}:`, error);
+                }
+            });
+            
+            if (allBounds.length > 0) {
+                map.fitBounds(allBounds, { padding: [50, 50] });
+            }
+        }
+        
+        // Initialize everything on page load
+        function initialize() {
+            console.log('Initializing map...');
+            
+            // First, get route data (all stations)
+            getRouteData();
+            
+            // Then add markers for main stations only
+            addMainStationMarkers();
+            
+            // Draw the route line
+            drawRoute();
+            
+            // Fit map to show all content
+            fitMapBounds();
+            
+            console.log('Initialization complete');
+        }
+        
+        // Start initialization
+        initialize();
+    </script>
+</body>
+</html>

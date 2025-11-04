@@ -113,7 +113,16 @@
 
                     <!-- Station Information Section -->
                     <div class="station-info-container" id="statusContainer">
-                        <h3>Route Stations</h3>
+                        <div class="station-header-controls">
+                            <h3>Route Stations</h3>
+                            <div class="station-controls">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="showNonStopStations" checked>
+                                    <span class="toggle-slider"></span>
+                                    <span class="toggle-label">Show Non-Stop Stations</span>
+                                </label>
+                            </div>
+                        </div>
                         <div class="progress-container">
                             <div id="progressBar" class="progress-bar">
                                 <div class="progress"></div>
@@ -146,7 +155,7 @@
 
         <!-- Footer -->
         <footer class="copyright-footer">
-            <p>&copy; 2025 Rahul Timbaliya. All rights reserved.</p>
+            <p>&copy; 2025 <a href="https://github.com/rahul-timbaliya">Rahul Timbaliya</a>. All rights reserved.</p>
         </footer>
     </div>
    

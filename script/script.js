@@ -276,28 +276,37 @@ async function updateLiveTrainData(trainNo, isManual = false) {
 
         if (data.trainStatus.trainStatus != "Yet to start from its source" && data.trainStatus.station[0].station != "undefined - undefined") {
             const currentStation = data.trainStatus.currentTrainStation;
-            document.getElementById('currentStation').textContent = currentStation || '-';
+            const currentStationName = currentStation?.split(' (')[0] || '';
+            
+            // Update current station display with indicator
+            document.getElementById('currentStation').innerHTML = currentStation ? 
+                `<span class="current-indicator">🔴 Current</span>${currentStation}` : '-';
 
-            const stations = data.trainStatus.station || [];
-            let currentStationIndex = stations.findIndex(s =>
-                s.station && currentStation &&
-                s.station.toLowerCase().includes(currentStation.toLowerCase().split(' (')[0])
+            // Create map of stopping stations
+            const stoppingStations = new Map(data.trainStatus.station.map(station => {
+                const [name] = station.station.split(' - ');
+                return [name.trim(), station];
+            }));
+
+            // Find current station in full route data
+            const routeStations = data.fullRouteData;
+            let currentStationIndex = routeStations.findIndex(s => 
+                s.station_name.toLowerCase() === currentStationName.toLowerCase()?.trim()
             );
-            const lastArrivedStation = [...stations].reverse().find(s => s.arrived === "Yes" || !s.platformNumber.includes('*'));
-            let currentActual = stations.findIndex(s =>
-                s.station && currentStation &&
-                s.station.toLowerCase().includes(lastArrivedStation.station.toLowerCase().split('-')[0].trim())
+            
+            // Find the last arrived station for progress calculation
+            const lastArrivedStation = [...data.trainStatus.station].reverse().find(s => s.arrived === "Yes" || !s.platformNumber.includes('*'));
+            let currentActual = routeStations.findIndex(s =>
+                s.station_name.toLowerCase() === lastArrivedStation?.station?.split(' - ')[0]?.toLowerCase()?.trim()
             );
             if (currentStationIndex === -1) currentStationIndex = 0;
 
-            const nextStation = currentActual < stations.length - 1
-                ? stations[currentActual + 1].station
-                : 'Destination';
-
+            const nextStationIndex = currentActual < data.trainStatus.station.length - 1 ? currentActual + 1 : -1;
+            const nextStation = nextStationIndex >= 0 ? data.trainStatus.station[nextStationIndex].station : 'Destination';
             document.getElementById('nextStation').textContent = nextStation;
 
-            const preStation = currentActual < stations.length - 1
-                ? stations[currentActual].station
+            const preStation = currentActual >= 0 && currentActual < data.trainStatus.station.length
+                ? data.trainStatus.station[currentActual].station
                 : 'Destination';
             document.getElementById('currentStation').textContent = preStation || '-';
 
@@ -309,56 +318,83 @@ async function updateLiveTrainData(trainNo, isManual = false) {
             document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
             const stationListContainer = document.getElementById('stationListContainer');
             if (stationListContainer) {
-                const stationItems = stations.map((station, index) => {
-                    const isCurrent = index === currentStationIndex;
-                    const isPassed = station.arrived === 'Yes' || station.arrived === '-' || !station.platformNumber.includes('*') || index < currentStationIndex;
+                const stationItems = data.fullRouteData.map((station, index) => {
+                    const stoppingInfo = stoppingStations.get(station.station_name);
+                    const isStoppingStation = station.wtt_stop === 'Y';
+                    const isCurrent = station.station_name.toLowerCase() === currentStationName.toLowerCase();
+                    const isPassed = stoppingInfo?.arrived === 'Yes' || 
+                                   stoppingInfo?.arrived === '-' || 
+                                   (stoppingInfo && !stoppingInfo.platformNumber?.includes('*')) || 
+                                   index < currentStationIndex;
                     const status = isPassed ? 'Departed' : isCurrent ? 'Current' : 'Upcoming';
 
-                    // Format station name (remove station code if present)
-                    const stationName = station.station.split(' - ')[0].trim();
-                    const stationCode = station.station.split(' - ')[1].trim();
                     return `
-                    <div class="station-item ${isCurrent ? 'current' : ''} ${isPassed ? 'passed' : ''}">
-                        <div class="station-details">
+                    <div class="station-item ${isCurrent ? 'current' : ''} ${isPassed ? 'passed' : ''} ${isStoppingStation ? 'stopping-station' : 'pass-through-station'}">
+                        <div class="station-timeline">
+                            <div class="timeline-dot ${isStoppingStation ? 'major' : 'minor'}"></div>
+                            ${index < data.fullRouteData.length - 1 ? '<div class="timeline-line"></div>' : ''}
+                        </div>
+                        <div class="station-details ${!isStoppingStation ? 'pass-through-details' : ''}">
                             <div class="station-header">
-                                <span class="station-name">${stationName} <span class="station-code">${stationCode}</span></span>
-                                <span class="station-status">${status}</span>
-                            </div>
-                            <div class="station-time">
-                                <div class="time-block">
-                                    <span class="time-label">STA:</span>
-                                    <span>${station.sta.split(' ')[0] || '--:--'}</span>
-                                    <span class="time-label">STD:</span>
-                                    <span>${station.std.split(' ')[0] || '--:--'}</span>
+                                <div class="station-title">
+                                    <span class="station-name">${station.station_name}</span>
+                                    <span class="station-code">${station.station}</span>
                                 </div>
-                                <div class="time-block">
-                                    <span class="time-label">ETA:</span>
-                                    <span>${station.eta.split(' ')[0] || '--:--'}</span>
-                                    <span class="time-label">ETd:</span>
-                                    <span>${station.etd.split(' ')[0] || '--:--'}</span>
+                                <div class="station-badges">
+                                    ${!isStoppingStation ? 
+                                      '<span class="station-status non-stop">Non-Stop Station</span>' : 
+                                      `<span class="station-status ${status.toLowerCase()}">${status}</span>`}
                                 </div>
                             </div>
-                            <div class="station-meta">
-                                <span class="station-platform">
-                                    <span class="time-label">Platform</span>
-                                    <span>${station.platformNumber?.replace('*', '') || '--'}</span>
-                                </span>
-                                <span class="station-distance">
-                                    <span class="time-label">Distance</span>
-                                    <span>${station.distance || '0'} km</span>
-                                </span>
+                            ${isStoppingStation && stoppingInfo ? `
+                            <div class="station-times">
+                                <div class="time-block">
+                                    <span class="time-label">Sch. Arrival</span>
+                                    <span class="time-value">${stoppingInfo.sta?.split(' ')[0] || '--:--'}</span>
+                                </div>
+                                <div class="time-block">
+                                    <span class="time-label">Sch. Departure</span>
+                                    <span class="time-value">${stoppingInfo.std?.split(' ')[0] || '--:--'}</span>
+                                </div>
+                                <div class="time-divider"></div>
+                                <div class="time-block">
+                                    <span class="time-label">Exp. Arrival</span>
+                                    <span class="time-value">${stoppingInfo.eta?.split(' ')[0] || '--:--'}</span>
+                                </div>
+                                <div class="time-block">
+                                    <span class="time-label">Exp. Departure</span>
+                                    <span class="time-value">${stoppingInfo.etd?.split(' ')[0] || '--:--'}</span>
+                                </div>
+                                <div class="station-meta">
+                                    <div class="platform-info">
+                                        <span class="platform-label">Platform</span>
+                                        <span class="platform-number">${stoppingInfo.platformNumber?.replace('*', '') || '--'}</span>
+                                    </div>
+                                    <div class="distance-info">
+                                        <span class="distance-label">Distance</span>
+                                        <span class="distance-value">${station.distance || '0'} km</span>
+                                    </div>
+                                    ${stoppingInfo.arrived ? '<div class="arrived-badge">Train Arrived</div>' : ''}
+                                </div>
                             </div>
+                            ` : `
+                            <div class="non-stop-info">
+                                <div class="distance-only">
+                                    <span class="distance-marker">Distance:</span>
+                                    <span class="distance-value">${station.distance || '0'} km</span>
+                                </div>
+                            </div>`}
                         </div>
                     </div>
-                `;
+                `
                 }).join('');
 
                 stationListContainer.className = 'station-list';
                 stationListContainer.innerHTML = stationItems;
             }
 
-            const progress = stations.length > 1
-                ? Math.round((currentActual / (stations.length - 1)) * 100)
+            const progress = data.fullRouteData.length > 1
+                ? Math.round((currentActual / (data.fullRouteData.length - 1)) * 100)
                 : 0;
 
             const progressBar = document.getElementById('progressBar');
@@ -500,32 +536,34 @@ function updateTrainLocation(lat, lng) {
 
 }
 
-function simulateLiveTrainData() {
+function simulateLiveTrainData(stationData) {
     if (window.liveDataInterval) {
         clearInterval(window.liveDataInterval);
+    }
+
+    if (!stationData || !Array.isArray(stationData)) {
+        console.error('Invalid station data');
+        return;
     }
 
     let currentStationIndex = 0;
 
     window.liveDataInterval = setInterval(() => {
-        document.getElementById('currentStation').textContent =
-            `${stations[currentStationIndex].name} (${stations[currentStationIndex].code})`;
+        const station = stationData[currentStationIndex];
+        if (station) {
+            document.getElementById('currentStation').textContent = station.station || 'Unknown Station';
 
-        if (currentStationIndex < stations.length - 1) {
-            document.getElementById('nextStation').textContent =
-                `${stations[currentStationIndex + 1].name} (${stations[currentStationIndex + 1].code})`;
-        } else {
-            document.getElementById('nextStation').textContent = 'Terminus';
+            if (currentStationIndex < stationData.length - 1) {
+                document.getElementById('nextStation').textContent = stationData[currentStationIndex + 1].station || 'Unknown Station';
+            } else {
+                document.getElementById('nextStation').textContent = 'Terminus';
+            }
         }
 
         const now = new Date();
         document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
 
-        const speedElement = document.getElementById('speedValue');
-        speedElement.style.color = speed > 100 ? '#e74c3c' : '#2ecc71';
-
-        currentStationIndex = (currentStationIndex + 1) % stations.length;
-
+        currentStationIndex = (currentStationIndex + 1) % stationData.length;
     }, 5000);
 }
 
@@ -1041,9 +1079,23 @@ function initPnrTab() {
 }
 
 // Update the DOMContentLoaded event listener
+function toggleNonStopStations() {
+    const showNonStop = document.getElementById('showNonStopStations').checked;
+    const nonStopStations = document.querySelectorAll('.pass-through-station');
+    nonStopStations.forEach(station => {
+        station.style.display = showNonStop ? 'flex' : 'none';
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initTabs();
     initializeDatePicker();
     initPnrTab();
     initializeTrainAutocomplete();
+    
+    // Initialize non-stop stations toggle
+    const toggleSwitch = document.getElementById('showNonStopStations');
+    if (toggleSwitch) {
+        toggleSwitch.addEventListener('change', toggleNonStopStations);
+    }
 });
