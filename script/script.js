@@ -93,7 +93,7 @@ async function trackTrain() {
         trainData.routeData.forEach((station, index) => {
             const isFirst = index === 0;
             const isLast = index === trainData.routeData.length - 1;
-            
+
             // Add day separator if day changes
             if (station.day !== currentDay) {
                 currentDay = station.day;
@@ -218,6 +218,9 @@ async function updateLiveTrainData(trainNo, isManual = false) {
     const statusElement = document.getElementById('trainInfoLive');
     const journeyDate = document.getElementById('journeyDate').value || new Date().toISOString().split('T')[0];
     document.getElementById('statusContainer').style.display = 'block';
+    document.getElementById('mapContainer').style.display = 'block';
+    document.getElementById('routeMap').style.display = 'block';
+    
     // Clear previous content if this is not a manual refresh
     if (!isManual) {
         if (statusElement) statusElement.innerHTML = '';
@@ -259,7 +262,6 @@ async function updateLiveTrainData(trainNo, isManual = false) {
             let statusElement = document.getElementById("trainInfoLive")
             statusElement.innerHTML = `<div class="error">Error: No live data available for this train</div>`;
             throw new Error('No live data available for this train');
-
         }
 
         if (liveTrackingContent) {
@@ -277,10 +279,10 @@ async function updateLiveTrainData(trainNo, isManual = false) {
         if (data.trainStatus.trainStatus != "Yet to start from its source" && data.trainStatus.station[0].station != "undefined - undefined") {
             const currentStation = data.trainStatus.currentTrainStation;
             const currentStationName = currentStation?.split(' (')[0] || '';
-            
+
             // Update current station display with indicator
-            document.getElementById('currentStation').innerHTML = currentStation ? 
-                `<span class="current-indicator">🔴 Current</span>${currentStation}` : '-';
+            document.getElementById('currentStation').innerHTML = currentStation ?
+                `<span class="current-indicator"></span>${currentStation}` : '-';
 
             // Create map of stopping stations
             const stoppingStations = new Map(data.trainStatus.station.map(station => {
@@ -288,27 +290,47 @@ async function updateLiveTrainData(trainNo, isManual = false) {
                 return [name.trim(), station];
             }));
 
+            if (data.fullRouteData != null && data.fullRouteData.length > 0) {
+                document.getElementById('routeMap').src = 'map.html?trainNumber=' + trainNo + '&date=' + formattedDate;
+            }
             // Find current station in full route data
-            const routeStations = data.fullRouteData;
-            let currentStationIndex = routeStations.findIndex(s => 
-                s.station_name.toLowerCase() === currentStationName.toLowerCase()?.trim()
+            const routeStations = data.fullRouteData != null ? data.fullRouteData.filter(s => s != null && s != undefined) : [];
+
+            let currentStationIndex = routeStations.findIndex(s =>
+                s.station.toLowerCase() === currentStationName.toLowerCase()?.trim()
             );
-            
+
             // Find the last arrived station for progress calculation
             const lastArrivedStation = [...data.trainStatus.station].reverse().find(s => s.arrived === "Yes" || !s.platformNumber.includes('*'));
-            let currentActual = routeStations.findIndex(s =>
-                s.station_name.toLowerCase() === lastArrivedStation?.station?.split(' - ')[0]?.toLowerCase()?.trim()
+            let currentActual = data.fullRouteData != null ? routeStations.findIndex(s =>
+                s.station.toLowerCase() === currentStationName.toLowerCase()?.trim()
+            ) : data.trainStatus.station.findIndex(s =>
+                s.station && currentStation &&
+                s.station.toLowerCase().includes(lastArrivedStation.station.toLowerCase().split('-')[0].trim())
             );
             if (currentStationIndex === -1) currentStationIndex = 0;
 
-            const nextStationIndex = currentActual < data.trainStatus.station.length - 1 ? currentActual + 1 : -1;
-            const nextStation = nextStationIndex >= 0 ? data.trainStatus.station[nextStationIndex].station : 'Destination';
-            document.getElementById('nextStation').textContent = nextStation;
+            // Find last stopped station
+            const arrivedStations = data.trainStatus.station.filter(s => s.arrived === "Yes");
+            const lastStoppedStation = arrivedStations[arrivedStations.length - 1];
 
-            const preStation = currentActual >= 0 && currentActual < data.trainStatus.station.length
-                ? data.trainStatus.station[currentActual].station
-                : 'Destination';
-            document.getElementById('currentStation').textContent = preStation || '-';
+            // Find the next stopping station based on last stopped station
+            let nextStoppingStation = null;
+            if (lastStoppedStation) {
+                const lastStoppedIndex = data.trainStatus.station.findIndex(s => s.station === lastStoppedStation.station);
+                if (lastStoppedIndex !== -1) {
+                    nextStoppingStation = data.trainStatus.station.slice(lastStoppedIndex + 1).find(s =>
+                        s.platformNumber && s.arrived !== "Yes"
+                    );
+                }
+            }
+
+            // Update the display with station names and platform info
+            document.getElementById('currentStation').innerHTML = lastStoppedStation ?
+                `<span class="current-indicator"></span>${lastStoppedStation.station} (Platform ${lastStoppedStation.platformNumber?.replace('*', '') || '-'})` : '-';
+
+            document.getElementById('nextStation').innerHTML = nextStoppingStation ?
+                `${nextStoppingStation.station} (Platform ${nextStoppingStation.platformNumber?.replace('*', '') || '-'})` : 'Journey Completed';
 
             const delayStatus = getDelayStatus(data.trainStatus.currentTrainStationDelay || 'On Time');
             const delayElement = document.getElementById('delay');
@@ -317,86 +339,156 @@ async function updateLiveTrainData(trainNo, isManual = false) {
 
             document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
             const stationListContainer = document.getElementById('stationListContainer');
-            if (stationListContainer) {
-                const stationItems = data.fullRouteData.map((station, index) => {
-                    const stoppingInfo = stoppingStations.get(station.station_name);
-                    const isStoppingStation = station.wtt_stop === 'Y';
-                    const isCurrent = station.station_name.toLowerCase() === currentStationName.toLowerCase();
-                    const isPassed = stoppingInfo?.arrived === 'Yes' || 
-                                   stoppingInfo?.arrived === '-' || 
-                                   (stoppingInfo && !stoppingInfo.platformNumber?.includes('*')) || 
-                                   index < currentStationIndex;
-                    const status = isPassed ? 'Departed' : isCurrent ? 'Current' : 'Upcoming';
 
-                    return `
-                    <div class="station-item ${isCurrent ? 'current' : ''} ${isPassed ? 'passed' : ''} ${isStoppingStation ? 'stopping-station' : 'pass-through-station'}">
-                        <div class="station-timeline">
-                            <div class="timeline-dot ${isStoppingStation ? 'major' : 'minor'}"></div>
-                            ${index < data.fullRouteData.length - 1 ? '<div class="timeline-line"></div>' : ''}
+            if (stationListContainer) {
+                if (data.fullRouteData == null || data.fullRouteData.length === 0) {
+                    const stationItems = data.trainStatus.station.map((station, index) => {
+                        const isCurrent = index === currentStationIndex;
+                        const isPassed = station.arrived === 'Yes' || station.arrived === '-' || !station.platformNumber.includes('*') || index < currentStationIndex;
+                        const status = isPassed ? 'Departed' : isCurrent ? 'Current' : 'Upcoming';
+
+                        // Format station name (remove station code if present)
+                        const stationName = station.station.split(' - ')[0].trim();
+                        const stationCode = station.station.split(' - ')[1].trim();
+
+                        return `
+            <div class="station-item ${isCurrent ? 'current' : ''} ${isPassed ? 'passed' : ''} stopping-station">
+                <div class="station-timeline">
+                    <div class="timeline-dot major"></div>
+                    ${index < data.trainStatus.station.length - 1 ? '<div class="timeline-line"></div>' : ''}
+                </div>
+                <div class="station-details">
+                    <div class="station-header">
+                        <div class="station-title">
+                            <span class="station-name">${stationName}</span>
+                            <span class="station-code">${stationCode}</span>
                         </div>
-                        <div class="station-details ${!isStoppingStation ? 'pass-through-details' : ''}">
-                            <div class="station-header">
-                                <div class="station-title">
-                                    <span class="station-name">${station.station_name}</span>
-                                    <span class="station-code">${station.station}</span>
-                                </div>
-                                <div class="station-badges">
-                                    ${!isStoppingStation ? 
-                                      '<span class="station-status non-stop">Non-Stop Station</span>' : 
-                                      `<span class="station-status ${status.toLowerCase()}">${status}</span>`}
-                                </div>
-                            </div>
-                            ${isStoppingStation && stoppingInfo ? `
-                            <div class="station-times">
-                                <div class="time-block">
-                                    <span class="time-label">Sch. Arrival</span>
-                                    <span class="time-value">${stoppingInfo.sta?.split(' ')[0] || '--:--'}</span>
-                                </div>
-                                <div class="time-block">
-                                    <span class="time-label">Sch. Departure</span>
-                                    <span class="time-value">${stoppingInfo.std?.split(' ')[0] || '--:--'}</span>
-                                </div>
-                                <div class="time-divider"></div>
-                                <div class="time-block">
-                                    <span class="time-label">Exp. Arrival</span>
-                                    <span class="time-value">${stoppingInfo.eta?.split(' ')[0] || '--:--'}</span>
-                                </div>
-                                <div class="time-block">
-                                    <span class="time-label">Exp. Departure</span>
-                                    <span class="time-value">${stoppingInfo.etd?.split(' ')[0] || '--:--'}</span>
-                                </div>
-                                <div class="station-meta">
-                                    <div class="platform-info">
-                                        <span class="platform-label">Platform</span>
-                                        <span class="platform-number">${stoppingInfo.platformNumber?.replace('*', '') || '--'}</span>
-                                    </div>
-                                    <div class="distance-info">
-                                        <span class="distance-label">Distance</span>
-                                        <span class="distance-value">${station.distance || '0'} km</span>
-                                    </div>
-                                    ${stoppingInfo.arrived ? '<div class="arrived-badge">Train Arrived</div>' : ''}
-                                </div>
-                            </div>
-                            ` : `
-                            <div class="non-stop-info">
-                                <div class="distance-only">
-                                    <span class="distance-marker">Distance:</span>
-                                    <span class="distance-value">${station.distance || '0'} km</span>
-                                </div>
-                            </div>`}
+                        <div class="station-badges">
+                            <span class="station-status ${status.toLowerCase()}">${status}</span>
                         </div>
                     </div>
-                `
-                }).join('');
+                    <div class="station-times">
+                        <div class="time-block">
+                            <span class="time-label">Sch. Arrival</span>
+                            <span class="time-value">${station.sta.split(' ')[0] || '--:--'}</span>
+                        </div>
+                        <div class="time-block">
+                            <span class="time-label">Sch. Departure</span>
+                            <span class="time-value">${station.std.split(' ')[0] || '--:--'}</span>
+                        </div>
+                        <div class="time-divider"></div>
+                        <div class="time-block">
+                            <span class="time-label">Exp. Arrival</span>
+                            <span class="time-value">${station.eta.split(' ')[0] || '--:--'}</span>
+                        </div>
+                        <div class="time-block">
+                            <span class="time-label">Exp. Departure</span>
+                            <span class="time-value">${station.etd.split(' ')[0] || '--:--'}</span>
+                        </div>
+                        <div class="station-meta">
+                            <div class="platform-info">
+                                <span class="platform-label">Platform</span>
+                                <span class="platform-number">${station.platformNumber?.replace('*', '') || '--'}</span>
+                            </div>
+                            <div class="distance-info">
+                                <span class="distance-label">Distance</span>
+                                <span class="distance-value">${station.distance || '0'} km</span>
+                            </div>
+                            ${station.arrived === 'Yes' ? '<div class="arrived-badge">Train Arrived</div>' : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+                    }).join('');
+                    stationListContainer.className = 'station-list';
+                    stationListContainer.innerHTML = stationItems;
+                }
+                else {
+                    const stationItems = data.fullRouteData.map((station, index) => {
+                        const stoppingInfo = stoppingStations.get(station.station_name);
+                        const isStoppingStation = station.wtt_stop === 'Y';
+                        const isCurrent = (station.station + " (" + station.station_name + ")").toLowerCase() === data.trainStatus.currentTrainStation.toLowerCase();
 
-                stationListContainer.className = 'station-list';
-                stationListContainer.innerHTML = stationItems;
+                        const isPassed = stoppingInfo?.arrived === 'Yes' ||
+                            stoppingInfo?.arrived === '-' ||
+                            (stoppingInfo && !stoppingInfo.platformNumber?.includes('*')) ||
+                            index < currentStationIndex;
+                        const status = isPassed ? 'Departed' : isCurrent ? 'Current' : 'Upcoming';
+
+                        return `
+            <div class="station-item ${isCurrent ? 'current' : ''} ${isPassed ? 'passed' : ''} ${isStoppingStation ? 'stopping-station' : 'pass-through-station'}">
+                <div class="station-timeline">
+                    <div class="timeline-dot ${isStoppingStation ? 'major' : 'minor'}"></div>
+                    ${index < data.fullRouteData.length - 1 ? '<div class="timeline-line"></div>' : ''}
+                </div>
+                <div class="station-details ${!isStoppingStation ? 'pass-through-details' : ''}">
+                    <div class="station-header">
+                        <div class="station-title">
+                            <span class="station-name">${station.station_name}</span>
+                            <span class="station-code">${station.station}</span>
+                        </div>
+                        <div class="station-badges">
+                            ${!isStoppingStation ?
+                                '<span class="station-status non-stop">Non-Stop Station</span>' :
+                                `<span class="station-status ${status.toLowerCase()}">${status}</span>`
+                            }
+                        </div>
+                    </div>
+                    ${isStoppingStation && stoppingInfo ? `
+                    <div class="station-times">
+                        <div class="time-block">
+                            <span class="time-label">Sch. Arrival</span>
+                            <span class="time-value">${stoppingInfo.sta?.split(' ')[0] || '--:--'}</span>
+                        </div>
+                        <div class="time-block">
+                            <span class="time-label">Sch. Departure</span>
+                            <span class="time-value">${stoppingInfo.std?.split(' ')[0] || '--:--'}</span>
+                        </div>
+                        <div class="time-divider"></div>
+                        <div class="time-block">
+                            <span class="time-label">Exp. Arrival</span>
+                            <span class="time-value">${stoppingInfo.eta?.split(' ')[0] || '--:--'}</span>
+                        </div>
+                        <div class="time-block">
+                            <span class="time-label">Exp. Departure</span>
+                            <span class="time-value">${stoppingInfo.etd?.split(' ')[0] || '--:--'}</span>
+                        </div>
+                        <div class="station-meta">
+                            <div class="platform-info">
+                                <span class="platform-label">Platform</span>
+                                <span class="platform-number">${stoppingInfo.platformNumber?.replace('*', '') || '--'}</span>
+                            </div>
+                            <div class="distance-info">
+                                <span class="distance-label">Distance</span>
+                                <span class="distance-value">${station.distance || '0'} km</span>
+                            </div>
+                            ${stoppingInfo.arrived === 'Yes' ? '<div class="arrived-badge">Train Arrived</div>' : ''}
+                        </div>
+                    </div>
+                    ` : `
+                    <div class="non-stop-info">
+                        <div class="distance-only">
+                            <span class="distance-marker">Distance:</span>
+                            <span class="distance-value">${station.distance || '0'} km</span>
+                        </div>
+                    </div>`}
+                </div>
+            </div>
+        `;
+                    }).join('');
+
+                    stationListContainer.className = 'station-list';
+                    stationListContainer.innerHTML = stationItems;
+                }
             }
 
-            const progress = data.fullRouteData.length > 1
+            const progress = data.fullRouteData != null && data.fullRouteData != undefined
                 ? Math.round((currentActual / (data.fullRouteData.length - 1)) * 100)
-                : 0;
+                : Math.round((currentActual / (data.trainStatus.station.length - 1)) * 100);
 
+
+            console.log('Progress:', data.trainStatus.station.length)
             const progressBar = document.getElementById('progressBar');
             const progressText = document.getElementById('progressText');
             if (progressBar && progressText) {
@@ -429,7 +521,14 @@ async function updateLiveTrainData(trainNo, isManual = false) {
                 </div>
             </div>
         `;
-
+            if (data.fullRouteData == null && data.fullRouteData == undefined) {
+                document.getElementById('routeMap').style.display = 'none';
+                document.getElementById('mapContainer').style.display = 'none';
+                document.getElementById('station-controls').style.display = 'none';
+            }
+            else{
+                document.getElementById('station-controls').style.display = 'block';
+            }
             const statusContainer = document.getElementById('liveTrainInfo');
             if (statusContainer) {
                 const existingCard = statusContainer.querySelector('.train-status-card');
@@ -440,13 +539,17 @@ async function updateLiveTrainData(trainNo, isManual = false) {
                 }
             }
         }
-        else{
+        else {
             document.getElementById('statusContainer').style.display = 'none';
+            document.getElementById('routeMap').style.display = 'none';
+            document.getElementById('mapContainer').style.display = 'none';
             document.getElementById('currentStation').textContent = data.trainStatus.trainStatus || '-';
         }
     } catch (error) {
         console.error('Error updating live train data:', error);
+        document.getElementById('routeMap').style.display = 'none';
         document.getElementById('statusContainer').style.display = 'none';
+        document.getElementById('mapContainer').style.display = 'none';
         let statusElement = document.getElementById('trainInfoLive');
         if (statusElement) {
             statusElement.innerHTML = `<div class="error">Error: 'Failed to fetch live data'</div>`;
@@ -479,11 +582,11 @@ function initTabs() {
         // Don't do anything if clicking the same tab
         const tabId = button.getAttribute('data-tab');
         if (tabId === currentTab) return;
-        
+
         // Store the current scroll position before switching tabs
         const currentContent = document.getElementById(currentTab);
         const scrollPosition = currentContent.scrollTop;
-        
+
         // Remove active class from all buttons and contents
         tabButtons.forEach(btn => btn.classList.remove('active'));
         tabContents.forEach(content => content.classList.remove('active'));
@@ -492,10 +595,10 @@ function initTabs() {
         button.classList.add('active');
         const newTab = document.getElementById(tabId);
         newTab.classList.add('active');
-        
+
         // Restore scroll position for the new tab
         newTab.scrollTop = scrollPosition;
-        
+
         // Update current tab
         currentTab = tabId;
 
@@ -504,7 +607,7 @@ function initTabs() {
             searchBox.style.display = 'flex';
             trainNumberInput.style.display = 'block';
             searchButton.style.display = 'block';
-            
+
             // Focus the search input when switching to these tabs
             if (tabId === 'route-tab' || tabId === 'live-tab') {
                 trainNumberInput.focus();
@@ -576,6 +679,7 @@ document.addEventListener('DOMContentLoaded', () => {
         refreshButton.addEventListener('click', () => {
             const trainNo = document.getElementById('trainNumber').value.trim();
             if (trainNo) {
+                document.getElementById('trainInfoLive').innerHTML = '';
                 updateLiveTrainData(trainNo, true);
             }
         });
@@ -587,6 +691,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('live-tab').classList.contains('active')) {
                 const trainNo = document.getElementById('trainNumber').value.trim();
                 if (trainNo) {
+                    document.getElementById('trainInfoLive').innerHTML = '';
                     updateLiveTrainData(trainNo, true);
                 }
             }
@@ -613,44 +718,44 @@ document.addEventListener('DOMContentLoaded', () => {
         // Only clear if we're on the live-tab
         const activeTab = document.querySelector('.tab-button.active')?.getAttribute('data-tab');
         if (activeTab !== 'live-tab') return;
-        
+
         // Clear the main content areas
         const liveTrackingContent = document.getElementById('liveTrackingContent');
         const statusElement = document.getElementById('trainInfoLive');
         const liveTrainInfo = document.getElementById('liveTrainInfo');
-        
+
         // Reset all text fields to default but only if they're in the active tab
         const elementsToClear = [
-            'trainNumberfirst', 'fromStation', 'toStation', 
-            'departureTime', 'arrivalTime', 'duration', 
+            'trainNumberfirst', 'fromStation', 'toStation',
+            'departureTime', 'arrivalTime', 'duration',
             'distance', 'currentStation', 'nextStation',
             'lastStation', 'delay', 'trainSpeed',
             'trainLocation', 'platformNumber', 'stationCode'
         ];
-        
+
         elementsToClear.forEach(id => {
             const el = document.getElementById(id);
             if (el && el.closest('.tab-content.active')) {
                 el.textContent = '-';
             }
         });
-        
+
         // Only clear content in the active tab
         if (liveTrackingContent && liveTrackingContent.closest('.tab-content.active')) {
             liveTrackingContent.style.display = 'none';
-            
+
             const stationCards = liveTrackingContent.querySelectorAll('.station-card');
             stationCards.forEach(card => card.remove());
         }
-        
+
         if (statusElement && statusElement.closest('.tab-content.active')) {
             statusElement.innerHTML = '';
         }
-        
+
         if (liveTrainInfo && liveTrainInfo.closest('.tab-content.active')) {
             liveTrainInfo.innerHTML = '';
         }
-        
+
         // Clear any error messages in the active tab
         const activeContent = document.querySelector('.tab-content.active');
         if (activeContent) {
@@ -676,16 +781,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (searchButton.classList.contains('loading')) {
             return;
         }
-        
+
         // Clear any previous intervals
         if (window.liveDataInterval) {
             clearInterval(window.liveDataInterval);
             window.liveDataInterval = null;
         }
-        
+
         // Clear previous content before new search
         clearPreviousContent();
-        
+
         setLoading(true);
 
         const activeTab = document.querySelector('.tab-button.active')?.getAttribute('data-tab');
@@ -703,7 +808,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     clearInterval(window.liveDataInterval);
                 }
                 await updateLiveTrainData(trainNo);
-                window.liveDataInterval = setInterval(() => document.getElementById('refreshButton').click(), 80000);
+                window.liveDataInterval = setInterval(() => document.getElementById('refreshButton').click(), 180000);
             }
         } catch (error) {
             const resultDiv = document.querySelector(activeTab === 'route-tab' ? '#result' : '#liveTrackingContent');
@@ -1092,7 +1197,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeDatePicker();
     initPnrTab();
     initializeTrainAutocomplete();
-    
+
     // Initialize non-stop stations toggle
     const toggleSwitch = document.getElementById('showNonStopStations');
     if (toggleSwitch) {
