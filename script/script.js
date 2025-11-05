@@ -220,7 +220,7 @@ async function updateLiveTrainData(trainNo, isManual = false) {
     document.getElementById('statusContainer').style.display = 'block';
     document.getElementById('mapContainer').style.display = 'block';
     document.getElementById('routeMap').style.display = 'block';
-    
+
     // Clear previous content if this is not a manual refresh
     if (!isManual) {
         if (statusElement) statusElement.innerHTML = '';
@@ -291,7 +291,19 @@ async function updateLiveTrainData(trainNo, isManual = false) {
             }));
 
             if (data.fullRouteData != null && data.fullRouteData.length > 0) {
-                document.getElementById('routeMap').src = 'map.html?trainNumber=' + trainNo + '&date=' + formattedDate;
+                const data = {
+                    trainNumber: trainNo,
+                    date: formattedDate,
+                    fullMap: "false"
+                };
+
+                const secretKey = sessionStorage.getItem("encryptionKey");
+                // Encrypt data
+                const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), secretKey).toString();
+
+                const encoded = encodeURIComponent(encrypted);
+
+                document.getElementById('routeMap').src = 'map.html?' + 'data=' + encoded;
             }
             // Find current station in full route data
             const routeStations = data.fullRouteData != null ? data.fullRouteData.filter(s => s != null && s != undefined) : [];
@@ -488,7 +500,6 @@ async function updateLiveTrainData(trainNo, isManual = false) {
                 : Math.round((currentActual / (data.trainStatus.station.length - 1)) * 100);
 
 
-            console.log('Progress:', data.trainStatus.station.length)
             const progressBar = document.getElementById('progressBar');
             const progressText = document.getElementById('progressText');
             if (progressBar && progressText) {
@@ -526,7 +537,7 @@ async function updateLiveTrainData(trainNo, isManual = false) {
                 document.getElementById('mapContainer').style.display = 'none';
                 document.getElementById('station-controls').style.display = 'none';
             }
-            else{
+            else {
                 document.getElementById('station-controls').style.display = 'block';
             }
             const statusContainer = document.getElementById('liveTrainInfo');

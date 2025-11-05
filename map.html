@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Railway Station Map</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -34,7 +35,9 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             transition: transform 0.3s ease-out;
         }
-.leaflet-control-zoom { display: none !important; }
+        .leaflet-control-zoom {
+            display: none !important;
+        }
         .controls.collapsed {
             transform: translateX(calc(100% - 0px));
         }
@@ -42,7 +45,7 @@
         .toggle-button {
             position: absolute;
             left: -42px;
-            
+
             width: 40px;
             height: 40px;
             background: white;
@@ -456,19 +459,45 @@
         var trainData = null;
 
         const urlParams = new URLSearchParams(window.location.search);
-        const trainNumber = urlParams.get("trainNumber");
-        const date = urlParams.get("date");
-        const fullMapParam = urlParams.get("fullMap");
+        var trainNumber;
+        var date;
+        var fullMapParam;
+
+        const secretKey = sessionStorage.getItem("encryptionKey");
+        const encryptedData = urlParams.get("data");
+        console.log("Encrypted data from URL:", encryptedData);
+        let decryptedData = null;
+
+        if (encryptedData && secretKey) {
+            const bytes = CryptoJS.AES.decrypt(encryptedData, secretKey);
+            decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+            console.log("Decrypted data:", decryptedData);
+            trainNumber = decryptedData.trainNumber;
+            date = decryptedData.date;
+            fullMapParam = decryptedData.fullMap;
+        }
+
         if (fullMapParam === "true") {
             document.getElementById("fullMapButton").style.display = "none";
             document.getElementById("trainInfoSection").style.marginTop = "0";
-            document.getElementById("trainInfoSection").style.paddingTop= "0";
+            document.getElementById("trainInfoSection").style.paddingTop = "0";
             document.getElementById("trainInfoSection").style.borderTop = "0";
         }
 
         function fullMap() {
-            window.open(window.location.href + "&fullMap=true", "_blank");
+            const data = {
+                trainNumber: trainNumber,
+                date: date,
+                fullMap: "true"
+            };
 
+            const secretKey = sessionStorage.getItem("encryptionKey");
+            console.log("Using secret key:", secretKey);
+            const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), secretKey).toString();
+
+            const encoded = encodeURIComponent(encrypted);
+            const newUrl = window.location.origin + window.location.pathname + '?data=' + encoded;
+            window.open(newUrl, '_blank');
         }
 
         function toggleSidePanel() {
