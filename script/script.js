@@ -1207,7 +1207,7 @@ function redirectToMap(trainNumber, actualtime) {
 
     const encoded = encodeURIComponent(encrypted);
 
-    window.open(window.origin+ `/map.html?data=${encoded}`, '_blank');
+    window.open(window.origin+window.location.pathname.replace('index.html', `map.html?data=${encoded}`), '_blank');
 }
 
 // Display trains between stations
