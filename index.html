@@ -15,11 +15,14 @@
     <div class="container">
         <h1>Train Tracking</h1>
 
-        <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab-button active" data-tab="route-tab">Route Information</button>
-            <button class="tab-button" data-tab="live-tab">Live Tracking</button>
-            <button class="tab-button" data-tab="pnr-tab">PNR Status</button>
+        <!-- Tabs Container with Scroll -->
+        <div class="tabs-wrapper">
+            <div class="tabs">
+                <button class="tab-button active" data-tab="route-tab">Route Information</button>
+                <button class="tab-button" data-tab="live-tab">Live Tracking</button>
+                <button class="tab-button" data-tab="btw-tab">BTW Station</button>
+                <button class="tab-button" data-tab="pnr-tab">PNR Status</button>
+            </div>
         </div>
 
         <!-- Search Box -->
@@ -152,6 +155,29 @@
             </div>
         </div>
 
+        <!-- BTW Station Tab -->
+        <div id="btw-tab" class="tab-content">
+            <div class="btw-search-container">
+                <div class="station-input-group">
+                    <label for="fromStationBtw">From Station</label>
+                    <input type="text" id="fromStationBtw" placeholder="Enter Station Name/Code" autocomplete="off" required>
+                    <div id="fromSuggestionsContainer" class="suggestions-container"></div>
+                </div>
+                <div class="station-input-group">
+                    <label for="toStationBtw">To Station</label>
+                    <input type="text" id="toStationBtw" placeholder="Enter Station Name/Code" autocomplete="off" required>
+                    <div id="toSuggestionsContainer" class="suggestions-container"></div>
+                </div>
+                <button id="searchBtwButton" class="btw-search-button">
+                    <span class="spinner"></span>
+                    <span class="button-text">Search Trains</span>
+                </button>
+            </div>
+            <div id="btwResult" class="btw-result">
+                <!-- BTW results will be displayed here -->
+            </div>
+        </div>
+
         <!-- PNR Status Tab -->
         <div id="pnr-tab" class="tab-content">
             <div class="search-box">
@@ -174,6 +200,7 @@
    
     <!-- Load train data first -->
     <script src="https://enquiry.indianrail.gov.in/mntes/javascripts/train_data.js?v=2"></script>
+    <script src="https://erail.in/js/cmp/stations.js?v=092f8"></script>
     <!-- Then load main script -->
     <script src="script/script.js"></script>
 </body>

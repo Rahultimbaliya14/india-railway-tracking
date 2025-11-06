@@ -498,8 +498,6 @@ async function updateLiveTrainData(trainNo, isManual = false) {
             const progress = data.fullRouteData != null && data.fullRouteData != undefined
                 ? Math.round((currentActual / (data.fullRouteData.length - 1)) * 100)
                 : Math.round((currentActual / (data.trainStatus.station.length - 1)) * 100);
-
-
             const progressBar = document.getElementById('progressBar');
             const progressText = document.getElementById('progressText');
             if (progressBar && progressText) {
@@ -586,31 +584,23 @@ function initTabs() {
     const searchBox = document.querySelector('.search-box');
     const trainNumberInput = document.getElementById('trainNumber');
     const searchButton = document.getElementById('searchButton');
-    let currentTab = 'route-tab'; // Track current tab
+    let currentTab = 'route-tab';
 
-    // Function to handle tab switching
     function switchTab(button) {
-        // Don't do anything if clicking the same tab
         const tabId = button.getAttribute('data-tab');
         if (tabId === currentTab) return;
 
-        // Store the current scroll position before switching tabs
         const currentContent = document.getElementById(currentTab);
         const scrollPosition = currentContent.scrollTop;
 
-        // Remove active class from all buttons and contents
         tabButtons.forEach(btn => btn.classList.remove('active'));
         tabContents.forEach(content => content.classList.remove('active'));
 
-        // Add active class to clicked button and corresponding content
         button.classList.add('active');
         const newTab = document.getElementById(tabId);
         newTab.classList.add('active');
 
-        // Restore scroll position for the new tab
         newTab.scrollTop = scrollPosition;
-
-        // Update current tab
         currentTab = tabId;
 
         // Show/hide search box based on active tab
@@ -618,25 +608,27 @@ function initTabs() {
             searchBox.style.display = 'flex';
             trainNumberInput.style.display = 'block';
             searchButton.style.display = 'block';
-
-            // Focus the search input when switching to these tabs
             if (tabId === 'route-tab' || tabId === 'live-tab') {
                 trainNumberInput.focus();
             }
-        } else if (tabId === 'pnr-tab') {
+        } else {
             searchBox.style.display = 'none';
-            // Focus PNR input when switching to PNR tab
+        }
+        
+        // Focus appropriate input based on tab
+        if (tabId === 'pnr-tab') {
             const pnrInput = document.getElementById('pnrNumber');
             if (pnrInput) pnrInput.focus();
+        } else if (tabId === 'btw-tab') {
+            const fromInput = document.getElementById('fromStationBtw');
+            if (fromInput) fromInput.focus();
         }
     }
 
-    // Add click event to all tab buttons
     tabButtons.forEach(button => {
         button.addEventListener('click', () => switchTab(button));
     });
 
-    // Initialize first tab as active
     if (tabButtons.length > 0) {
         switchTab(tabButtons[0]);
     }
@@ -844,6 +836,171 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 });
+function initializeBtwAutocomplete() {
+    const fromInput = document.getElementById('fromStationBtw');
+    const toInput = document.getElementById('toStationBtw');
+    const fromSuggestions = document.getElementById('fromSuggestionsContainer');
+    const toSuggestions = document.getElementById('toSuggestionsContainer');
+    
+    function filterStations(input, currentInput) {
+        const value = input.toLowerCase();
+        if (!value) return [];
+        
+        const stations = window.StationsList || [];
+        const fromValue = document.getElementById('fromStationBtw').value.split(' - ')[0];
+        const toValue = document.getElementById('toStationBtw').value.split(' - ')[0];
+        
+        return stations.filter(station => {
+            const [code, name] = [station[0], station[1]];
+            
+            // Skip if station code matches either input's selected station code
+            if (currentInput !== 'from' && code === fromValue) return false;
+            if (currentInput !== 'to' && code === toValue) return false;
+            
+            return code.toLowerCase().includes(value) || 
+                   (name && name.toLowerCase().includes(value));
+        }).slice(0, 10); // Limit to 10 suggestions
+    }
+    
+    function setupStationAutocomplete(input, suggestionsContainer) {
+        let selectedIndex = -1;
+        
+        // Add Enter key handler for input fields
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+             
+                if (input.id === 'fromStationBtw') {
+                    document.getElementById('toStationBtw').focus();
+                } else if (input.id === 'toStationBtw') {
+                    document.getElementById('searchBtwButton').click();
+                }
+            }
+        });
+        
+        function validateStations() {
+            const fromValue = document.getElementById('fromStationBtw').value;
+            const toValue = document.getElementById('toStationBtw').value;
+            const searchButton = document.getElementById('searchBtwButton');
+            const errorDiv = document.getElementById('btwStationError') || (() => {
+                const div = document.createElement('div');
+                div.id = 'btwStationError';
+                div.className = 'error-message';
+                const container = document.querySelector('.btw-stations-container');
+                if (container) {
+                    container.appendChild(div);
+                }
+                return div;
+            })();
+
+            if (fromValue && toValue && fromValue === toValue) {
+                searchButton.disabled = true;
+                errorDiv.textContent = 'From and To stations cannot be the same';
+                errorDiv.style.display = 'block';
+            } else {
+                searchButton.disabled = false;
+                errorDiv.style.display = 'none';
+            }
+        }
+        
+        function showStationSuggestions(value) {
+            if (!value) {
+                suggestionsContainer.style.display = 'none';
+                return;
+            }
+
+            const isFromInput = input.id === 'fromStationBtw';
+            const matches = filterStations(value, isFromInput ? 'from' : 'to');
+            suggestionsContainer.innerHTML = '';
+
+            if (matches.length > 0) {
+                suggestionsContainer.style.display = 'block';
+                
+                matches.forEach((station, index) => {
+                    const [code, name] = [station[0],station[1]];
+                    const suggestion = document.createElement('div');
+                    suggestion.className = 'suggestion-item';
+                    suggestion.innerHTML = `
+                        <span class="station-code">${code}</span>
+                        <span class="station-name">${name || ''}</span>
+                    `;
+                    
+                    suggestion.addEventListener('click', () => {
+                        input.value = `${code} - ${name}`;
+                        suggestionsContainer.style.display = 'none';
+                        validateStations();
+                    });
+
+                    suggestion.addEventListener('mouseenter', () => {
+                        const items = suggestionsContainer.querySelectorAll('.suggestion-item');
+                        items.forEach(item => item.classList.remove('selected'));
+                        suggestion.classList.add('selected');
+                        selectedIndex = index;
+                    });
+                    
+                    suggestionsContainer.appendChild(suggestion);
+                });
+            } else {
+                suggestionsContainer.style.display = 'none';
+            }
+        }
+
+        input.addEventListener('input', () => {
+            const value = input.value.trim();
+            showStationSuggestions(value);
+        });
+
+        input.addEventListener('keydown', (e) => {
+            const suggestions = suggestionsContainer.querySelectorAll('.suggestion-item');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = Math.min(selectedIndex + 1, suggestions.length - 1);
+                updateSelectedSuggestion(suggestions);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = Math.max(selectedIndex - 1, -1);
+                updateSelectedSuggestion(suggestions);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (selectedIndex > -1 && suggestions[selectedIndex]) {
+                    const selectedValue = suggestions[selectedIndex].querySelector('.station-name').textContent;
+                    const selectedCode = suggestions[selectedIndex].querySelector('.station-code').textContent;
+                    input.value = `${selectedCode} - ${selectedValue}`;
+                    suggestionsContainer.style.display = 'none';
+                }
+            } else if (e.key === 'Escape') {
+                suggestionsContainer.style.display = 'none';
+            }
+        });
+
+        function updateSelectedSuggestion(suggestions) {
+            suggestions.forEach((suggestion, i) => {
+                if (i === selectedIndex) {
+                    suggestion.classList.add('selected');
+                    suggestion.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                } else {
+                    suggestion.classList.remove('selected');
+                }
+            });
+        }
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!input.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                suggestionsContainer.style.display = 'none';
+            }
+        });
+    }
+    
+    if (fromInput && fromSuggestions) {
+        setupStationAutocomplete(fromInput, fromSuggestions);
+    }
+    
+    if (toInput && toSuggestions) {
+        setupStationAutocomplete(toInput, toSuggestions);
+    }
+}
 function initializeTrainAutocomplete() {
     const trainInput = document.getElementById('trainNumber');
     const searchButton = document.getElementById('searchButton');
@@ -996,6 +1153,119 @@ function initializeTrainAutocomplete() {
         }
     });
 }
+
+async function fetchTrainsBetweenStations(fromStation, toStation) {
+    try {
+        // Extract station codes from the input values (format: "CODE - Station Name")
+        const fromCode = fromStation.split(' - ')[0];
+        const toCode = toStation.split(' - ')[0];
+        
+        const response = await fetch('https://node-rahul-timbaliya.vercel.app/api/train/getBetweenTrain', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                fromStation: fromCode,
+                toStation: toCode
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch trains');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching trains between stations:', error);
+        throw error;
+    }
+}
+
+// Display trains between stations
+function displayBtwResults(trainsData) {
+    const btwResult = document.getElementById('btwResult');
+
+    if (!trainsData || !trainsData.data || trainsData.data.length === 0) {
+        btwResult.innerHTML = '<div class="error">No trains found between these stations</div>';
+        return;
+    }
+
+    // Sort trains by departure time
+    const sortedTrains = [...trainsData.data].sort((a, b) => {
+        const timeA = parseInt(a.arrived.replace(':', ''));
+        const timeB = parseInt(b.arrived.replace(':', ''));
+        return timeA - timeB;
+    });
+
+    let html = `
+        <div class="route-header">
+            <h3>Trains from ${trainsData.fromStation} to ${trainsData.toStation}</h3>
+            <div class="route-summary">
+                <span class="total-train-badge">${sortedTrains.length} Trains Found</span>
+            </div>
+        </div>
+        <div class="trains-container">`;
+
+    sortedTrains.forEach(train => {
+        html += `
+            <div class="train-card">
+                <div class="train-card-header">
+                    <div class="train-primary-info">
+                        <h3>${train.trainName}</h3>
+                        <span class="train-number-badge">${train.trainNumber}</span>
+                    </div>
+
+                    <button class="track-button" onclick="trackTrain('${train.trainNumber}')">
+                        Track Train
+                    </button>
+                </div>
+                <div class="train-route-info">
+                    <div class="route-station">
+                       
+                        <div class="station-details">
+                            <div class="route-station-name">${train.arrivedStation}</div>
+                            <div class="station-timing">
+                            <span class="time">${train.arrived}</span>
+                         
+                        </div>
+                        </div>
+                    </div>
+                    <div class="journey-info">
+                        <span class="duration train-number-badge">${train.duration} - Hours</span>
+                        <div class="journey-line">
+                            <div class="line"></div>
+                          
+                        </div>
+                    </div>
+                    <div class="route-station">
+                       
+                        <div class="station-details">
+                            <div class="route-station-name">${train.destinationStation}</div>
+                             <div class="station-timing">
+                            <span class="time">${train.reached}</span>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="train-details-grid">
+                    <div class="detail-box">
+                        <span class="detail-box-label">Full Route</span>
+                        <div class="route-endpoints">
+                            <span class="start-point">${train.from}</span>
+                            <span class="route-arrow">→</span>
+                            <span class="end-point">${train.to}</span>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        `;
+    });
+
+    btwResult.innerHTML = html;
+}
+
 
 // Function to fetch PNR status
 async function fetchPnrStatus(pnrNumber) {
@@ -1208,6 +1478,43 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeDatePicker();
     initPnrTab();
     initializeTrainAutocomplete();
+    initializeBtwAutocomplete();
+
+    // Add event listener for between stations search button
+    const searchBtwButton = document.getElementById('searchBtwButton');
+    if (searchBtwButton) {
+        searchBtwButton.addEventListener('click', async () => {
+            const fromStation = document.getElementById('fromStationBtw').value.trim();
+            const toStation = document.getElementById('toStationBtw').value.trim();
+            
+            if (!fromStation || !toStation) {
+                if (!fromStation) {
+                    document.getElementById('fromStationBtw').classList.add('input-error');
+                    setTimeout(() => document.getElementById('fromStationBtw').classList.remove('input-error'), 500);
+                }
+                if (!toStation) {
+                    document.getElementById('toStationBtw').classList.add('input-error');
+                    setTimeout(() => document.getElementById('toStationBtw').classList.remove('input-error'), 500);
+                }
+                return;
+            }
+
+            try {
+                searchBtwButton.disabled = true;
+                searchBtwButton.classList.add('loading');
+                document.getElementById('btwResult').innerHTML = '<div class="loading">Searching for trains...</div>';
+
+                const trainsData = await fetchTrainsBetweenStations(fromStation, toStation);
+                displayBtwResults(trainsData);
+            } catch (error) {
+                console.error('Error searching trains:', error);
+                document.getElementById('btwResult').innerHTML = '<div class="error">Error: Failed to fetch trains. Please try again.</div>';
+            } finally {
+                searchBtwButton.disabled = false;
+                searchBtwButton.classList.remove('loading');
+            }
+        });
+    }
 
     // Initialize non-stop stations toggle
     const toggleSwitch = document.getElementById('showNonStopStations');
