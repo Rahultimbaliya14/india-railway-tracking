@@ -1206,8 +1206,8 @@ function redirectToMap(trainNumber, actualtime) {
     const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), secretKey).toString();
 
     const encoded = encodeURIComponent(encrypted);
-
-    window.open(window.origin+window.location.pathname.replace('index.html', `map.html?data=${encoded}`), '_blank');
+    console.log('Redirecting to map with data:', window.origin + (window.location.pathname.replace('index.html', `map.html?data=${encoded}`)));
+    window.open(window.origin + (window.location.pathname.replace('index.html', `map.html?data=${encoded}`)), '_blank');
 }
 
 // Display trains between stations
