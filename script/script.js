@@ -614,7 +614,7 @@ function initTabs() {
         } else {
             searchBox.style.display = 'none';
         }
-        
+
         // Focus appropriate input based on tab
         if (tabId === 'pnr-tab') {
             const pnrInput = document.getElementById('pnrNumber');
@@ -841,35 +841,35 @@ function initializeBtwAutocomplete() {
     const toInput = document.getElementById('toStationBtw');
     const fromSuggestions = document.getElementById('fromSuggestionsContainer');
     const toSuggestions = document.getElementById('toSuggestionsContainer');
-    
+
     function filterStations(input, currentInput) {
         const value = input.toLowerCase();
         if (!value) return [];
-        
+
         const stations = window.StationsList || [];
         const fromValue = document.getElementById('fromStationBtw').value.split(' - ')[0];
         const toValue = document.getElementById('toStationBtw').value.split(' - ')[0];
-        
+
         return stations.filter(station => {
             const [code, name] = [station[0], station[1]];
-            
+
             // Skip if station code matches either input's selected station code
             if (currentInput !== 'from' && code === fromValue) return false;
             if (currentInput !== 'to' && code === toValue) return false;
-            
-            return code.toLowerCase().includes(value) || 
-                   (name && name.toLowerCase().includes(value));
+
+            return code.toLowerCase().includes(value) ||
+                (name && name.toLowerCase().includes(value));
         }).slice(0, 10); // Limit to 10 suggestions
     }
-    
+
     function setupStationAutocomplete(input, suggestionsContainer) {
         let selectedIndex = -1;
-        
+
         // Add Enter key handler for input fields
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-             
+
                 if (input.id === 'fromStationBtw') {
                     document.getElementById('toStationBtw').focus();
                 } else if (input.id === 'toStationBtw') {
@@ -877,7 +877,7 @@ function initializeBtwAutocomplete() {
                 }
             }
         });
-        
+
         function validateStations() {
             const fromValue = document.getElementById('fromStationBtw').value;
             const toValue = document.getElementById('toStationBtw').value;
@@ -902,7 +902,7 @@ function initializeBtwAutocomplete() {
                 errorDiv.style.display = 'none';
             }
         }
-        
+
         function showStationSuggestions(value) {
             if (!value) {
                 suggestionsContainer.style.display = 'none';
@@ -915,16 +915,16 @@ function initializeBtwAutocomplete() {
 
             if (matches.length > 0) {
                 suggestionsContainer.style.display = 'block';
-                
+
                 matches.forEach((station, index) => {
-                    const [code, name] = [station[0],station[1]];
+                    const [code, name] = [station[0], station[1]];
                     const suggestion = document.createElement('div');
                     suggestion.className = 'suggestion-item';
                     suggestion.innerHTML = `
                         <span class="station-code">${code}</span>
                         <span class="station-name">${name || ''}</span>
                     `;
-                    
+
                     suggestion.addEventListener('click', () => {
                         input.value = `${code} - ${name}`;
                         suggestionsContainer.style.display = 'none';
@@ -937,7 +937,7 @@ function initializeBtwAutocomplete() {
                         suggestion.classList.add('selected');
                         selectedIndex = index;
                     });
-                    
+
                     suggestionsContainer.appendChild(suggestion);
                 });
             } else {
@@ -952,7 +952,7 @@ function initializeBtwAutocomplete() {
 
         input.addEventListener('keydown', (e) => {
             const suggestions = suggestionsContainer.querySelectorAll('.suggestion-item');
-            
+
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 selectedIndex = Math.min(selectedIndex + 1, suggestions.length - 1);
@@ -992,11 +992,11 @@ function initializeBtwAutocomplete() {
             }
         });
     }
-    
+
     if (fromInput && fromSuggestions) {
         setupStationAutocomplete(fromInput, fromSuggestions);
     }
-    
+
     if (toInput && toSuggestions) {
         setupStationAutocomplete(toInput, toSuggestions);
     }
@@ -1159,7 +1159,7 @@ async function fetchTrainsBetweenStations(fromStation, toStation) {
         // Extract station codes from the input values (format: "CODE - Station Name")
         const fromCode = fromStation.split(' - ')[0];
         const toCode = toStation.split(' - ')[0];
-        
+
         const response = await fetch('https://node-rahul-timbaliya.vercel.app/api/train/getBetweenTrain', {
             method: 'POST',
             headers: {
@@ -1182,6 +1182,34 @@ async function fetchTrainsBetweenStations(fromStation, toStation) {
     }
 }
 
+function redirectToMap(trainNumber, actualtime) {
+
+    const [hours, minutes] = actualtime.split(":").map(Number);
+    // Get current date and time
+    const now = new Date();
+    // Subtract the given time
+    now.setHours(now.getHours() - hours);
+    now.setMinutes(now.getMinutes() - minutes);
+
+    // Format the date as DD-MMM-YY
+    const options = { day: '2-digit', month: 'short', year: '2-digit' };
+    const formattedDate = now.toLocaleDateString('en-GB', options).replace(/ /g, '-');
+   
+    const data = {
+        trainNumber: trainNumber,
+        date: formattedDate,
+        fullMap: "true"
+    };
+
+    const secretKey = sessionStorage.getItem("encryptionKey");
+    // Encrypt data
+    const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), secretKey).toString();
+
+    const encoded = encodeURIComponent(encrypted);
+
+    window.open(window.origin+ `/map.html?data=${encoded}`, '_blank');
+}
+
 // Display trains between stations
 function displayBtwResults(trainsData) {
     const btwResult = document.getElementById('btwResult');
@@ -1190,6 +1218,13 @@ function displayBtwResults(trainsData) {
         btwResult.innerHTML = '<div class="error">No trains found between these stations</div>';
         return;
     }
+
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const today = days[new Date().getDay()];
+    const currentTime = new Date();
+    const currentHours = currentTime.getHours();
+    const currentMinutes = currentTime.getMinutes();
+    const currentTimeInMinutes = currentHours * 60 + currentMinutes;
 
     // Sort trains by departure time
     const sortedTrains = [...trainsData.data].sort((a, b) => {
@@ -1208,6 +1243,39 @@ function displayBtwResults(trainsData) {
         <div class="trains-container">`;
 
     sortedTrains.forEach(train => {
+        const runsToday = train.runOn.includes(today);
+
+        // Convert train times to minutes for comparison
+        const [arrHours, arrMinutes] = train.arrived.split(':').map(Number);
+        const [reachHours, reachMinutes] = train.reached.split(':').map(Number);
+        const arrivalTimeInMinutes = arrHours * 60 + arrMinutes;
+        const reachTimeInMinutes = reachHours * 60 + reachMinutes;
+
+        // Handle time crossing midnight
+        let adjustedReachTimeInMinutes = reachTimeInMinutes;
+        if (reachTimeInMinutes < arrivalTimeInMinutes) {
+            adjustedReachTimeInMinutes += 24 * 60; // Add 24 hours
+        }
+
+        // Check if train is currently running
+        const isTrainTime = currentTimeInMinutes >= arrivalTimeInMinutes &&
+            currentTimeInMinutes <= adjustedReachTimeInMinutes;
+
+        // Check if train will depart later today
+        const willDepartToday = runsToday && arrivalTimeInMinutes > currentTimeInMinutes;
+        const runDaily = train.runOn.length === 7;
+        const showTrackButton = runsToday && (isTrainTime || willDepartToday);
+
+        console.log(`Train ${train.trainNumber}:`, {
+            runsToday,
+            currentTime: `${currentHours}:${currentMinutes}`,
+            arrivalTime: `${arrHours}:${arrMinutes}`,
+            reachTime: `${reachHours}:${reachMinutes}`,
+            isTrainTime,
+            willDepartToday,
+            showTrackButton
+        });
+
         html += `
             <div class="train-card">
                 <div class="train-card-header">
@@ -1215,10 +1283,10 @@ function displayBtwResults(trainsData) {
                         <h3>${train.trainName}</h3>
                         <span class="train-number-badge">${train.trainNumber}</span>
                     </div>
-
-                    <button class="track-button" onclick="trackTrain('${train.trainNumber}')">
-                        Track Train
-                    </button>
+                    ${showTrackButton ? `
+                        <button class="track-button" onclick="redirectToMap('${train.trainNumber}', '${train.trainDuration}')">
+                            Track Train</button>
+                    ` : ''}
                 </div>
                 <div class="train-route-info">
                     <div class="route-station">
@@ -1257,7 +1325,16 @@ function displayBtwResults(trainsData) {
                             <span class="end-point">${train.to}</span>
                         </div>
                     </div>
-                    
+                    <div class="running-days">
+                        <span class="detail-box-label">Runs On: ${train.runOn.length === 7 ? '(Daily)' : ''}</span>
+                        <div class="days-list">
+                            ${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => `
+                                <span class="day-badge ${train.runOn.includes(day) ? 'active' : 'inactive'}" title="${day}">
+                                    ${day.slice(0, 3)}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -1309,7 +1386,7 @@ function displayPnrStatus(pnrData) {
         <div class="pnr-status-card">
             <div class="pnr-header">
                 <h3>PNR: ${pnr}</h3>
-                <span class="status-badge ${statusClass}">${statusText}</span>
+                <span class="status-badge ${statusClass == "can/mod" ? "cancelled" : statusClass}">${statusText}</span>
             </div>
             
             <div class="train-info">
@@ -1486,7 +1563,7 @@ document.addEventListener('DOMContentLoaded', () => {
         searchBtwButton.addEventListener('click', async () => {
             const fromStation = document.getElementById('fromStationBtw').value.trim();
             const toStation = document.getElementById('toStationBtw').value.trim();
-            
+
             if (!fromStation || !toStation) {
                 if (!fromStation) {
                     document.getElementById('fromStationBtw').classList.add('input-error');

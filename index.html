@@ -27,7 +27,8 @@
 
         <!-- Search Box -->
         <div class="search-box">
-            <input type="text" id="trainNumber" placeholder="Enter Train Number" inputmode="numeric" pattern="\d*" min="1" autocomplete="off" required>
+            <input type="text" id="trainNumber" placeholder="Enter Train Number" inputmode="numeric" pattern="\d*"
+                min="1" autocomplete="off" required>
             <button id="searchButton">
                 <span class="spinner"></span>
                 <span class="button-text">Search</span>
@@ -45,12 +46,12 @@
         <!-- Live Tracking Tab -->
         <div id="live-tab" class="tab-content">
             <!-- Date Selector - Always visible when tab is active -->
-           
+
             <div class="date-selector">
                 <label for="journeyDate">Journey Date:</label>
                 <input type="date" id="journeyDate" name="journeyDate">
             </div>
-           
+
             <div id="trainInfoLive" class="train-info"></div>
             <!-- Live tracking content that will be shown/hidden -->
             <div id="liveTrackingContent" style="display: none;">
@@ -145,12 +146,14 @@
                             <h3>Live Route Map</h3>
                         </div>
                         <div style="padding: 16px;">
-                            <div class="map-wrapper" style="width: 100%; height: 500px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                                <iframe id="routeMap" src="" style="width: 100%; height: 100%; border: none;" frameborder="0"></iframe>
+                            <div class="map-wrapper"
+                                style="width: 100%; height: 500px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                <iframe id="routeMap" src="" style="width: 100%; height: 100%; border: none;"
+                                    frameborder="0"></iframe>
                             </div>
                         </div>
                     </div>
-                   
+
                 </div>
             </div>
         </div>
@@ -160,7 +163,8 @@
             <div class="btw-search-container">
                 <div class="station-input-group">
                     <label for="fromStationBtw">From Station</label>
-                    <input type="text" id="fromStationBtw" placeholder="Enter Station Name/Code" autocomplete="off" required>
+                    <input type="text" id="fromStationBtw" placeholder="Enter Station Name/Code" autocomplete="off"
+                        required>
                     <div id="fromSuggestionsContainer" class="suggestions-container"></div>
                 </div>
                 <button id="swapStationsBtn" class="swap-stations-btn" title="Swap Stations">
@@ -168,7 +172,8 @@
                 </button>
                 <div class="station-input-group">
                     <label for="toStationBtw">To Station</label>
-                    <input type="text" id="toStationBtw" placeholder="Enter Station Name/Code" autocomplete="off" required>
+                    <input type="text" id="toStationBtw" placeholder="Enter Station Name/Code" autocomplete="off"
+                        required>
                     <div id="toSuggestionsContainer" class="suggestions-container"></div>
                 </div>
                 <button id="searchBtwButton" class="btw-search-button">
@@ -184,7 +189,8 @@
         <!-- PNR Status Tab -->
         <div id="pnr-tab" class="tab-content">
             <div class="search-box">
-                <input type="text" id="pnrNumber" placeholder="Enter 10-digit PNR Number" inputmode="numeric" pattern="\d{10}" maxlength="10" autocomplete="off" required>
+                <input type="text" id="pnrNumber" placeholder="Enter 10-digit PNR Number" inputmode="numeric"
+                    pattern="\d{10}" maxlength="10" autocomplete="off" required>
                 <button id="checkPnrButton">
                     <span class="spinner"></span>
                     <span class="button-text">Check Status</span>
@@ -200,7 +206,7 @@
             <p>&copy; 2025 <a href="https://github.com/rahul-timbaliya">Rahul Timbaliya</a>. All rights reserved.</p>
         </footer>
     </div>
-   
+
     <!-- Load train data first -->
     <script src="https://enquiry.indianrail.gov.in/mntes/javascripts/train_data.js?v=2"></script>
     <script src="https://erail.in/js/cmp/stations.js?v=092f8"></script>
