@@ -1521,4 +1521,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (toggleSwitch) {
         toggleSwitch.addEventListener('change', toggleNonStopStations);
     }
+
+    function swapStations() {
+        const fromStation = document.getElementById('fromStationBtw');
+        const toStation = document.getElementById('toStationBtw');
+        const tempValue = fromStation.value;
+        fromStation.value = toStation.value;
+        toStation.value = tempValue;
+    }
+
+    // Add in the DOMContentLoaded event listener section
+    const swapButton = document.getElementById('swapStationsBtn');
+    if (swapButton) {
+        swapButton.addEventListener('click', swapStations);
+    }
 });
