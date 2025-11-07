@@ -1,3 +1,62 @@
+function getTrainStatus(currentDate, runDays, runHour, runMinute, totalRunTime) {
+    const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    // --- Convert totalRunTime ("HH:MM") to total minutes ---
+    let totalRunMinutes = 0;
+    if (typeof totalRunTime === "string") {
+        const [hours, minutes] = totalRunTime.split(":").map(Number);
+        totalRunMinutes = (hours * 60) + (minutes || 0);
+    } else {
+        totalRunMinutes = totalRunTime; // fallback if number given
+    }
+
+    // --- Normalize input runDays ---
+    const runDaysArray = Array.isArray(runDays) ? runDays : [runDays];
+
+    // --- Generate candidate start/end times for each run day ---
+    const candidates = runDaysArray.map(runDay => {
+        const runDayIndex = weekdays.indexOf(runDay);
+        if (runDayIndex === -1) throw new Error(`Invalid weekday: ${runDay}`);
+
+        const startDate = new Date(currentDate);
+        startDate.setHours(runHour, runMinute, 0, 0);
+
+        const currentDayIndex = currentDate.getDay();
+        let diff = currentDayIndex - runDayIndex;
+        if (diff < 0) diff += 7;
+
+        startDate.setDate(startDate.getDate() - diff);
+
+        // If start is in future, shift back a week
+        if (startDate > currentDate) startDate.setDate(startDate.getDate() - 7);
+
+        const endDate = new Date(startDate.getTime() + totalRunMinutes * 60000);
+
+        return { runDay, startDate, endDate };
+    });
+
+    // --- Pick the latest start date before now ---
+    const latest = candidates.reduce((a, b) => (a.startDate > b.startDate ? a : b));
+
+    // --- Check if any train is currently running ---
+    let currentTrain = latest;
+    for (const c of candidates) {
+        if (currentDate >= c.startDate && currentDate <= c.endDate) {
+            currentTrain = c;
+            break;
+        }
+    }
+
+    const isRunning = currentDate >= currentTrain.startDate && currentDate <= currentTrain.endDate;
+
+    return {
+        ...currentTrain,
+        totalRunMinutes,
+        isRunning
+    };
+}
+
+
 async function fetchTrainData(trainNumber) {
     try {
         const response = await fetch(`https://node-rahul-timbaliya.vercel.app/api/train/getTrainRouteInfo/${trainNumber}`);
@@ -53,16 +112,30 @@ async function trackTrain() {
 
         const currentStationIndex = getCurrentStationIndex(trainData.routeData);
 
+        const depTime = trainData.departureTime.split('-')[0].trim();
+        const runHour = parseInt(depTime.split(':')[0], 10);
+        const runMinute = parseInt(depTime.split(':')[1], 10);
+        
+        const trainStatus = getTrainStatus(new Date(), trainData.runOn, runHour, runMinute, trainData.duration);
+        const showTrackButton = trainStatus?.isRunning;
         trainInfoDiv.innerHTML = `
             <div class="train-header">
-                <h2>${trainData.trainName} (${trainData.trainNumber})</h2>
-                <div class="train-route">
+               <div class="train-header-top">
+                    <div class="train-title-section">
+                        <h2>${trainData.trainName} (${trainData.trainNumber})</h2>
+                </div>
+             
+
                     <div class="route-segment">
                         <span class="station-code">${trainData.routeData[0].stationCode}</span>
                         <span class="station-name">${trainData.routeData[0].stationName}</span>
                         <span class="station-time">${formatTime(trainData.departureTime)}</span>
                     </div>
-                    <div class="route-arrow">→</div>
+                    <div class="${!showTrackButton ? 'route-arrow' : ''}">${showTrackButton ? `
+                            <button class="track-button" onclick="redirectToMap('${trainData.trainNumber}', '${trainStatus.startDate}')">
+                                Live Location
+                            </button>
+                        ` : '→'}</div>
                     <div class="route-segment">
                         <span class="station-code">${trainData.routeData[trainData.routeData.length - 1].stationCode}</span>
                         <span class="station-name">${trainData.routeData[trainData.routeData.length - 1].stationName}</span>
@@ -1182,19 +1255,11 @@ async function fetchTrainsBetweenStations(fromStation, toStation) {
     }
 }
 
-function redirectToMap(trainNumber, actualtime) {
-
-    const [hours, minutes] = actualtime.split(":").map(Number);
-    // Get current date and time
-    const now = new Date();
-    // Subtract the given time
-    now.setHours(now.getHours() - hours);
-    now.setMinutes(now.getMinutes() - minutes);
-
-    // Format the date as DD-MMM-YY
+function redirectToMap(trainNumber, journeyDate) {
+    const journeyDateObj = new Date(journeyDate);
     const options = { day: '2-digit', month: 'short', year: '2-digit' };
-    const formattedDate = now.toLocaleDateString('en-GB', options).replace(/ /g, '-');
-   
+    const formattedDate = journeyDateObj.toLocaleDateString('en-GB', options).replace(/ /g, '-');
+
     const data = {
         trainNumber: trainNumber,
         date: formattedDate,
@@ -1207,6 +1272,8 @@ function redirectToMap(trainNumber, actualtime) {
 
     const encoded = encodeURIComponent(encrypted);
     console.log('Redirecting to map with data:', window.origin + (window.location.pathname.replace('index.html', `map.html?data=${encoded}`)));
+
+    //window.open(window.origin + (window.location.pathname.replace('index.html', `map.html?data=${encoded}`)), '_blank');
     window.open(window.origin + window.location.pathname + `map.html?data=${encoded}`, '_blank');
 }
 
@@ -1243,39 +1310,18 @@ function displayBtwResults(trainsData) {
         <div class="trains-container">`;
 
     sortedTrains.forEach(train => {
-        const runsToday = train.runOn.includes(today);
+        const depTime = train.fromStationDepature.split('-')[0].trim();
 
-        // Convert train times to minutes for comparison
-        const [arrHours, arrMinutes] = train.arrived.split(':').map(Number);
-        const [reachHours, reachMinutes] = train.reached.split(':').map(Number);
-        const arrivalTimeInMinutes = arrHours * 60 + arrMinutes;
-        const reachTimeInMinutes = reachHours * 60 + reachMinutes;
-
-        // Handle time crossing midnight
-        let adjustedReachTimeInMinutes = reachTimeInMinutes;
-        if (reachTimeInMinutes < arrivalTimeInMinutes) {
-            adjustedReachTimeInMinutes += 24 * 60; // Add 24 hours
+        const runHour = parseInt(depTime.split(':')[0], 10);
+        const runMinute = parseInt(depTime.split(':')[1], 10);
+        console.log(train.trainNumber);
+        var result;
+        if (train.runOn.length > 0) {
+            result = getTrainStatus(new Date(), train.runOn, runHour, runMinute, train.trainDuration);
         }
-
-        // Check if train is currently running
-        const isTrainTime = currentTimeInMinutes >= arrivalTimeInMinutes &&
-            currentTimeInMinutes <= adjustedReachTimeInMinutes;
-
-        // Check if train will depart later today
-        const willDepartToday = runsToday && arrivalTimeInMinutes > currentTimeInMinutes;
-        const runDaily = train.runOn.length === 7;
-        const showTrackButton = runsToday && (isTrainTime || willDepartToday);
-
-        console.log(`Train ${train.trainNumber}:`, {
-            runsToday,
-            currentTime: `${currentHours}:${currentMinutes}`,
-            arrivalTime: `${arrHours}:${arrMinutes}`,
-            reachTime: `${reachHours}:${reachMinutes}`,
-            isTrainTime,
-            willDepartToday,
-            showTrackButton
-        });
-
+        console.log(train.trainNumber, result);
+        const showTrackButton = result?.isRunning;
+        console.log(showTrackButton);
         html += `
             <div class="train-card">
                 <div class="train-card-header">
@@ -1284,7 +1330,7 @@ function displayBtwResults(trainsData) {
                         <span class="train-number-badge">${train.trainNumber}</span>
                     </div>
                     ${showTrackButton ? `
-                        <button class="track-button" onclick="redirectToMap('${train.trainNumber}', '${train.trainDuration}')">
+                        <button class="track-button" onclick="redirectToMap('${train.trainNumber}', '${result.startDate}')">
                             Track Train</button>
                     ` : ''}
                 </div>
@@ -1541,7 +1587,6 @@ function initPnrTab() {
     }
 }
 
-// Update the DOMContentLoaded event listener
 function toggleNonStopStations() {
     const showNonStop = document.getElementById('showNonStopStations').checked;
     const nonStopStations = document.querySelectorAll('.pass-through-station');

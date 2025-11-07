@@ -513,6 +513,123 @@
             background: rgba(0, 0, 0, 0.5);
             z-index: 1999;
         }
+
+        /* Loading Animation Styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e1f4ff 100%);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+        }
+
+        .loading-content {
+            text-align: center;
+            padding: 32px;
+            border-radius: 24px;
+            background: white;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            width: 300px;
+        }
+
+        .loading-scene {
+            position: relative;
+            height: 120px;
+            margin: 20px 0;
+            background: linear-gradient(transparent 0%, transparent 50%, #3b82f6 50%, #3b82f6 52%, transparent 52%, transparent 100%);
+        }
+
+        .loading-train {
+            font-size: 32px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            animation: moveTrain 3s infinite ease-in-out;
+        }
+
+        .smoke {
+            position: absolute;
+            background: #e2e8f0;
+            border-radius: 50%;
+            animation: smokeAnimation 2s infinite;
+            opacity: 0;
+        }
+
+        .smoke-1 { width: 10px; height: 10px; left: 40%; top: 20%; animation-delay: 0.2s; }
+        .smoke-2 { width: 12px; height: 12px; left: 38%; top: 25%; animation-delay: 0.4s; }
+        .smoke-3 { width: 8px; height: 8px; left: 36%; top: 30%; animation-delay: 0.6s; }
+
+        .loading-text {
+            color: #1f2937;
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 20px;
+            background: linear-gradient(45deg, #3b82f6, #2563eb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .loading-subtext {
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .track {
+            position: absolute;
+            bottom: 56px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: repeating-linear-gradient(90deg, 
+                #3b82f6 0px, 
+                #3b82f6 8px,
+                transparent 8px,
+                transparent 16px
+            );
+            animation: moveTrack 0.5s infinite linear;
+        }
+
+        @keyframes moveTrain {
+            0%, 100% { 
+                transform: translate(-50%, -50%) translateX(-10px); 
+            }
+            50% { 
+                transform: translate(-50%, -50%) translateX(10px); 
+            }
+        }
+
+        @keyframes smokeAnimation {
+            0% { 
+                transform: translate(0, 0) scale(1);
+                opacity: 0.8;
+            }
+            100% { 
+                transform: translate(-20px, -40px) scale(2);
+                opacity: 0;
+            }
+        }
+
+        @keyframes moveTrack {
+            from { background-position: 0 0; }
+            to { background-position: 16px 0; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
     </style>
 </head>
 
@@ -592,13 +709,11 @@
 
         const secretKey = sessionStorage.getItem("encryptionKey");
         const encryptedData = urlParams.get("data");
-        console.log("Encrypted data from URL:", encryptedData);
         let decryptedData = null;
 
         if (encryptedData && secretKey) {
             const bytes = CryptoJS.AES.decrypt(encryptedData, secretKey);
             decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-            console.log("Decrypted data:", decryptedData);
             trainNumber = decryptedData.trainNumber;
             date = decryptedData.date;
             fullMapParam = decryptedData.fullMap;
@@ -619,7 +734,6 @@
             };
 
             const secretKey = sessionStorage.getItem("encryptionKey");
-            console.log("Using secret key:", secretKey);
             const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), secretKey).toString();
 
             const encoded = encodeURIComponent(encrypted);
@@ -684,12 +798,39 @@
             document.getElementById("distance").textContent = trainData.travelingKMS + " km";
         }
 
+        function showLoadingAnimation() {
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'loading-overlay';
+            loadingOverlay.innerHTML = `
+                <div class="loading-content">
+                    <div class="loading-scene">
+                        <div class="track"></div>
+                        <div class="loading-train">🚂</div>
+                        <div class="smoke smoke-1"></div>
+                        <div class="smoke smoke-2"></div>
+                        <div class="smoke smoke-3"></div>
+                    </div>
+                    <div class="loading-text">Tracking Train Location</div>
+                    <div class="loading-subtext">Fetching real-time updates...</div>
+                </div>
+            `;
+            document.body.appendChild(loadingOverlay);
+        }
+
+        function hideLoadingAnimation() {
+            const loadingOverlay = document.querySelector('.loading-overlay');
+            if (loadingOverlay) {
+                loadingOverlay.remove();
+            }
+        }
+
         async function loadTrainData() {
             const requestBody = {
                 trainNumber: trainNumber,
                 date: date
             };
 
+            showLoadingAnimation();
             try {
                 const response = await fetch(
                     "https://node-rahul-timbaliya.vercel.app/api/train/getTrainCurrentLocation",
@@ -704,7 +845,6 @@
 
                 trainData = await response.json();
                 currentStationCode = trainData.trainStatus.currentTrainStation.split(" ")[0].trim();
-                console.log("Current Station Code:", currentStationCode);
 
                 const apiMainStations = trainData.trainStatus.station.map(item => {
                     return item.station.split("-").pop().trim();
@@ -715,8 +855,10 @@
 
                 // Update the info card
                 updateTrainInfoCard();
+                hideLoadingAnimation();
 
             } catch (error) {
+                hideLoadingAnimation();
                 console.error("❌ Error loading train data:", error);
                 showErrorPopup();
             }
@@ -867,7 +1009,6 @@
                 }
             });
 
-            console.log(`Loaded ${routeStationData.length} stations for route`);
         }
 
         // Function to draw route connecting all stations
@@ -939,7 +1080,6 @@
             }
 
             showingRoute = true;
-            console.log(`Route drawn - Completed: ${completedStations.length}, Remaining: ${remainingStations.length} stations`);
         }
 
         // Function to toggle route visibility
