@@ -1583,10 +1583,11 @@ input[type="text"]:focus {
     cursor: pointer;
     font-size: 16px;
     font-weight: 600;
+    justify-content: center;
     transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
-    justify-content: space-between;
+
     min-width: 100px;
     position: relative;
     overflow: hidden;
